@@ -22,7 +22,7 @@ class SolaceConfig(object):
                  vmr_timeout=1):
 
         self.vmr_auth = vmr_auth
-        self.vmr_timeout = vmr_timeout
+        self.vmr_timeout = float(vmr_timeout)
 
         self.vmr_url = ("https" if vmr_secure else "http") + "://" +\
                             vmr_host + ":" + str(vmr_port)
@@ -56,12 +56,8 @@ def create_vpn(solace_config, vpn, settings=None):
     mandatory = {
         "msgVpnName": vpn
     }
-    data = dict()
-    data.update(defaults)
-    data.update(mandatory)
-    if settings:
-        data.update(settings)
 
+    data = _merge_dicts(defaults, mandatory, settings)
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS])
 
     return _make_post_request(solace_config, path, data)
@@ -87,12 +83,8 @@ def create_topic(solace_config, topic, owner="admin", vpn="default", settings=No
         "topicEndpointName": topic,
         "owner": owner
     }
-    data = dict()
-    data.update(defaults)
-    data.update(mandatory)
-    if settings:
-        data.update(settings)
 
+    data = _merge_dicts(defaults, mandatory, settings)
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, TOPIC_ENDPOINTS])
 
     return _make_post_request(solace_config, path, data)
@@ -114,12 +106,8 @@ def create_client_profile(solace_config, client_profile, vpn="default", settings
     mandatory = {
         "clientProfileName": client_profile
     }
-    data = dict()
-    data.update(defaults)
-    data.update(mandatory)
-    if settings:
-        data.update(settings)
 
+    data = _merge_dicts(defaults, mandatory, settings)
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, CLIENT_PROFILES])
 
     return _make_post_request(solace_config, path, data)
@@ -141,12 +129,8 @@ def create_client(solace_config, username, password, client_profile,
         "password": password,
         "clientProfileName": client_profile
     }
-    data = dict()
-    data.update(defaults)
-    data.update(mandatory)
-    if settings:
-        data.update(settings)
 
+    data = _merge_dicts(defaults, mandatory, settings)
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, CLIENT_USERNAMES])
 
     return _make_post_request(solace_config, path, data)
@@ -155,6 +139,14 @@ def delete_client(solace_config, username, vpn="default"):
     """Delete a Client"""
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, CLIENT_USERNAMES, username])
     return _make_delete_request(solace_config, path, None)
+
+### merge dictionaries
+def _merge_dicts(*argv):
+    data = dict()
+    for arg in argv:
+        if arg:
+            data.update(arg)
+    return data
 
 ### request/response handling
 def _parse_response(resp):
@@ -176,29 +168,24 @@ def _parse_bad_response(resp):
         return j["meta"]["error"]["description"]
     return "Unknown error"
 
+def _make_request(func, solace_config, path, json=None):
+    return _parse_response(
+        func(
+            solace_config.vmr_url + path,
+            json=json,
+            auth=solace_config.vmr_auth,
+            timeout=solace_config.vmr_timeout
+        )
+    )
+
 def _make_get_request(solace_config, path):
-    resp = requests.get(solace_config.vmr_url + path,
-                        auth=solace_config.vmr_auth,
-                        timeout=solace_config.vmr_timeout)
-    return _parse_response(resp)
+    return _make_request(requests.get, solace_config, path)
 
 def _make_post_request(solace_config, path, json=None):
-    resp = requests.post(solace_config.vmr_url + path,
-                         json=json,
-                         auth=solace_config.vmr_auth,
-                         timeout=solace_config.vmr_timeout)
-    return _parse_response(resp)
+    return _make_request(requests.post, solace_config, path, json)
 
 def _make_delete_request(solace_config, path, json=None):
-    resp = requests.delete(solace_config.vmr_url + path,
-                           json=json,
-                           auth=solace_config.vmr_auth,
-                           timeout=solace_config.vmr_timeout)
-    return _parse_response(resp)
+    return _make_request(requests.delete, solace_config, path, json)
 
 def _make_patch_request(solace_config, path, json=None):
-    resp = requests.patch(solace_config.vmr_url + path,
-                          json=json,
-                          auth=solace_config.vmr_auth,
-                          timeout=solace_config.vmr_timeout)
-    return _parse_response(resp)
+    return _make_request(requests.patch, solace_config, path, json)

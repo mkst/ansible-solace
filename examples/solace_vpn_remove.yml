@@ -1,7 +1,0 @@
-- name: Playbook to remove a vpn named 'foo'
-  hosts: localhost
-  tasks:
-  - name: Remove 'foo' VPN
-    solace_vpn:
-      name: foo
-      state: absent

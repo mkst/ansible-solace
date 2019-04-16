@@ -87,7 +87,7 @@ response:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-import ansible.module_utils.network.solace.solace_utils as solace
+import ansible.module_utils.network.solace.solace_utils as su
 
 def run_module():
     """Entrypoint to module"""
@@ -102,71 +102,23 @@ def run_module():
         state=dict(default="present", choices=["absent", "present"]),
         timeout=dict(default=1, require=False)
     )
-    result = dict(
-        changed=False,
-        response=dict()
-    )
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
-    solace_config = solace.SolaceConfig(
-        vmr_host=module.params["host"],
-        vmr_port=module.params["port"],
-        vmr_auth=(module.params["username"], module.params["password"]),
-        vmr_secure=module.params["secure_connection"],
-        vmr_timeout=module.params["timeout"]
-    )
 
-    vpn_name = module.params["name"]
-    vpn_settings = module.params["settings"]
+    msg_vpn = module.params["name"]
+    settings = module.params["settings"]
 
-    ok, resp = solace.get_configured_vpns(solace_config)
-
-    if not ok:
-        module.fail_json(msg=resp, **result)
-    configured_vpns = resp
-
-    if vpn_name in configured_vpns:
-        if module.params["state"] == "absent":
-            if not module.check_mode:
-                ok, resp = solace.delete_vpn(solace_config, vpn_name)
-                if not ok:
-                    module.fail_json(msg=resp, **result)
-            result["changed"] = True
-        else:
-            if len(vpn_settings.keys()):
-                # compare new settings against configuration
-                current_settings = configured_vpns[vpn_name]
-                bad_keys = [key for key in vpn_settings if key not in current_settings.keys()]
-                # fail if any unexpected settings found
-                if len(bad_keys):
-                    module.fail_json(msg="Invalid key(s): " + ", ".join(bad_keys), **result)
-
-                changed_keys = [x for x in vpn_settings if vpn_settings[x] != current_settings[x]]
-
-                if len(changed_keys):
-                    delta_settings = {key:vpn_settings[key] for key in changed_keys}
-                    ok, resp = solace.update_vpn(solace_config, vpn_name, settings=delta_settings)
-                    if not ok:
-                        module.fail_json(msg=resp, **result)
-
-                    result["delta"] = delta_settings
-                    result["response"] = resp
-                    result["changed"] = True
-            result["response"] = configured_vpns[vpn_name]
-
-
-    else:
-        if module.params["state"] == "present":
-            if not module.check_mode:
-                ok, resp = solace.create_vpn(solace_config, vpn_name, settings=vpn_settings)
-                if ok:
-                    result["response"] = resp
-                else:
-                    module.fail_json(msg=resp, **result)
-            result["changed"] = True
-
+    result = su.perform_module_actions(module,
+                                       msg_vpn,
+                                       settings,
+                                       su.get_configured_vpns,
+                                       [],
+                                       su.create_vpn,
+                                       su.delete_vpn,
+                                       su.update_vpn)
+                                       #[msg_vpn])
     module.exit_json(**result)
 
 def main():

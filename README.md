@@ -28,6 +28,13 @@ ansible-playbook examples/solace_vpn_add.yml
     name: foo
     settings:
       serviceMqttPlainTextListenPort: 1234
+# Add a queue to VPN foo
+- name: Add a queue to VPN foo
+  solace_queue:
+    name: baz
+    msg_vpn: foo
+    settings:
+      owner: "admin"
 ```
 
 # MODULES
@@ -40,13 +47,14 @@ Status of the `solace_*` modules:
 | solace_acl_profile | aclProfile | Action | |
 | solace_authorization_group | authorizationGroup | Action | |
 | solace_bridge | bridge | Action | |
-| solace_client_username | clientUsername | Action | |
-| solace_client_profile | clientProfile | Action | |
+| [solace_client](lib/ansible/modules/network/solace/solace_client.py) | clientUsername | Action | :sunny: |
+| [solace_client_profile](lib/ansible/modules/network/solace/solace_client_profile.py) | clientProfile | Action | :sunny: |
 | solace_jndi | jndi | Action | |
 | solace_mqtt_session | mqttSession | Action | |
-| solace_queue | queue | Action | |
+| [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: |
 | solace_replay_log | replayLog | Action | |
 | solace_replicated_topic | replicatedTopic | Action | |
 | solace_rest_delivery_point | restDeliveryPoint | Action | |
-| solace_topic | topicEndpoint | Action | |
-| [solace_vpn](modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: |
+| [solace_subscription](lib/ansible/modules/network/solace/solace_subscription.py) | queue/{..}/subscriptions | Action | :sunny: |
+| [solace_topic](lib/ansible/modules/network/solace/solace_topic.py) | topicEndpoint | Action | :sunny: |
+| [solace_vpn](lib/ansible/modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: |

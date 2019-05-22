@@ -32,7 +32,6 @@ def run_module():
                                        su.create_queue,
                                        su.delete_queue,
                                        su.update_queue)
-                                       #[msg_vpn, queue])
     module.exit_json(**result)
 
 def main():

@@ -32,7 +32,6 @@ def run_module():
                                        su.create_client,
                                        su.delete_client,
                                        su.update_client)
-                                       #[msg_vpn, client])
     module.exit_json(**result)
 
 def main():

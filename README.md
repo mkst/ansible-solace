@@ -41,20 +41,20 @@ ansible-playbook examples/solace_vpn_add.yml
 
 Status of the `solace_*` modules:
 
-| Module | SEMP Endpoint | Type | Status |
-| ------ | ------------- |:----:|:------:|
-| solace_about | about | Query | |
-| solace_acl_profile | aclProfile | Action | |
-| solace_authorization_group | authorizationGroup | Action | |
-| solace_bridge | bridge | Action | |
-| [solace_client](lib/ansible/modules/network/solace/solace_client.py) | clientUsername | Action | :sunny: |
-| [solace_client_profile](lib/ansible/modules/network/solace/solace_client_profile.py) | clientProfile | Action | :sunny: |
-| solace_jndi | jndi | Action | |
-| solace_mqtt_session | mqttSession | Action | |
-| [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: |
-| solace_replay_log | replayLog | Action | |
-| solace_replicated_topic | replicatedTopic | Action | |
-| solace_rest_delivery_point | restDeliveryPoint | Action | |
-| [solace_subscription](lib/ansible/modules/network/solace/solace_subscription.py) | queue/{..}/subscriptions | Action | :sunny: |
-| [solace_topic](lib/ansible/modules/network/solace/solace_topic.py) | topicEndpoint | Action | :sunny: |
-| [solace_vpn](lib/ansible/modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: |
+| Module | SEMP Endpoint | Type | Status | Example |
+| ------ | ------------- |:----:|:------:|:-------:|
+| solace_about | about | Query | | |
+| solace_acl_profile | aclProfile | Action | | |
+| solace_authorization_group | authorizationGroup | Action | | |
+| solace_bridge | bridge | Action | | |
+| [solace_client](lib/ansible/modules/network/solace/solace_client.py) | clientUsername | Action | :sunny: | [:page_facing_up:](examples/solace_client.yml) |
+| [solace_client_profile](lib/ansible/modules/network/solace/solace_client_profile.py) | clientProfile | Action | :sunny: | |
+| solace_jndi | jndi | Action | | |
+| solace_mqtt_session | mqttSession | Action | | |
+| [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queue.yml) |
+| solace_replay_log | replayLog | Action | | |
+| solace_replicated_topic | replicatedTopic | Action | | |
+| solace_rest_delivery_point | restDeliveryPoint | Action | | |
+| [solace_subscription](lib/ansible/modules/network/solace/solace_subscription.py) | queue/{..}/subscriptions | Action | :sunny: | |
+| [solace_topic](lib/ansible/modules/network/solace/solace_topic.py) | topicEndpoint | Action | :sunny: | |
+| [solace_vpn](lib/ansible/modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: | [:page_facing_up:](examples/solace_vpn.yml) |

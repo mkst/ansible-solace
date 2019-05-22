@@ -30,7 +30,6 @@ class SolaceConfig(object):
                             vmr_host + ":" + str(vmr_port)
 
 ### Ansible Module handler
-
 def perform_module_actions(module,
                            lookup_item,
                            settings,
@@ -64,7 +63,6 @@ def perform_module_actions(module,
     configured = resp
 
     whitelist = ["password"]
-
 
     if lookup_item in configured:
         if module.params["state"] == "absent":
@@ -106,6 +104,8 @@ def perform_module_actions(module,
     else:
         if module.params["state"] == "present":
             if not module.check_mode:
+                if settings:
+                    crud_args.append(settings)
                 ok, resp = create_func(solace_config, *crud_args)
                 if ok:
                     result["response"] = resp

@@ -32,7 +32,6 @@ def run_module():
                                        su.create_client_profile,
                                        su.delete_client_profile,
                                        su.update_client_profile)
-                                       #[msg_vpn, client_profile])
     module.exit_json(**result)
 
 def main():

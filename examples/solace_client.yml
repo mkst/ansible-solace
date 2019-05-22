@@ -1,0 +1,29 @@
+- name: Playbook to add a client named 'foo_client_1'
+  hosts: localhost
+  vars:
+    msg_vpn: TESTING
+    client_profile: foo
+    client: foo_client_1
+    client_password: secret_password
+  tasks:
+
+  - name: Remove Client
+    solace_client:
+      name: "{{ client }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add Client
+    solace_client:
+      name: "{{ client }}"
+      msg_vpn: "{{ msg_vpn }}"
+      settings:
+        clientProfileName: "{{ client_profile }}"
+        password: "{{ client_password }}"
+
+  - name: Update Client password
+    solace_client:
+      name: "{{ client }}"
+      msg_vpn: "{{ msg_vpn }}"
+      settings:
+        password: "{{ client_password }}_new" # not in response so always changed

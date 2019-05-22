@@ -118,7 +118,6 @@ def run_module():
                                        su.create_vpn,
                                        su.delete_vpn,
                                        su.update_vpn)
-                                       #[msg_vpn])
     module.exit_json(**result)
 
 def main():

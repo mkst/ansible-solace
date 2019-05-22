@@ -32,7 +32,6 @@ def run_module():
                                        su.create_topic_endpoint,
                                        su.delete_topic_endpoint,
                                        su.update_topic_endpoint)
-                                       #[msg_vpn, topic])
     module.exit_json(**result)
 
 def main():

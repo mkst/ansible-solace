@@ -34,7 +34,6 @@ def run_module():
                                        su.create_subscription,
                                        su.delete_subscription,
                                        su.update_subscription)
-                                       #[msg_vpn, queue, topic])
     module.exit_json(**result)
 
 def main():

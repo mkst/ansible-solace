@@ -1,0 +1,19 @@
+- name: Playbook to add a queue named 'bar'
+  hosts: localhost
+  tasks:
+  - name: Remove 'bar' queue from 'foo' VPN
+    solace_queue:
+      name: bar
+      msg_vpn: foo
+      state: absent
+
+  - name: Add 'bar' queue to 'foo' VPN
+    solace_queue:
+      name: bar
+      msg_vpn: foo
+      state: present
+    register: testout
+
+  - name: dump output
+    debug:
+      msg: '{{ testout }}'

@@ -4,6 +4,7 @@
 # MIT License
 
 import requests
+import re
 
 SEMP_V2_CONFIG = "/SEMP/v2/config"
 MSG_VPNS = "msgVpns"

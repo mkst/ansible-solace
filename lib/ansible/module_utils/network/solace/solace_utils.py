@@ -56,6 +56,10 @@ def perform_module_actions(module,
 
     settings = module.params["settings"]
 
+    if settings:
+        # jinja treats everything as a string, so cast ints and floats
+        settings = _type_conversion(settings)
+
     ok, resp = get_func(solace_config, *get_args)
 
     if not ok:
@@ -312,6 +316,17 @@ def _build_config_dict(resp, key):
     d = dict()
     for k in resp:
         d[k[key]] = k
+    return d
+
+def _type_conversion(d):
+    for k, i in d.iteritems():
+        t = type(i)
+        if (t == str) and re.search("^[0-9]+$", i):
+            d[k] = int(i)
+        elif (t == str) and re.search("^[0-9]+\.[0-9]$", i):
+            d[k] = float(i)
+        elif t == dict:
+            d[k] = _type_conversion(i)
     return d
 
 def _get_configuration(solace_config, path_array, key):

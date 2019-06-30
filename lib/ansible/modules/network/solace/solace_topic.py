@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# MIT License
+
+"""Ansible-Solace Module for configuring Topics"""
 from ansible.module_utils.basic import AnsibleModule
 import ansible.module_utils.network.solace.solace_utils as su
 
@@ -20,21 +26,18 @@ def run_module():
         supports_check_mode=True
     )
 
-    msg_vpn = module.params["msg_vpn"]
-    topic = module.params["name"]
-    settings = module.params["settings"]
-
     result = su.perform_module_actions(module,
-                                       topic,
-                                       settings,
+                                       module.params["name"],
+                                       module.params["settings"],
                                        su.get_configured_topic_endpoints_for_vpn,
-                                       [msg_vpn],
+                                       [module.params["msg_vpn"]],
                                        su.create_topic_endpoint,
                                        su.delete_topic_endpoint,
                                        su.update_topic_endpoint)
     module.exit_json(**result)
 
 def main():
+    """Standard boilerplate"""
     run_module()
 
 if __name__ == '__main__':

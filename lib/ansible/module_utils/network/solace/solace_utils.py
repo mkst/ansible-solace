@@ -1,10 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
 # MIT License
 
-import requests
+""" Collection of utility classes and functions to aid the solace_* modules. """
+
 import re
+import traceback
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError as error:
+    REQUESTS_IMP_ERR = traceback.format_exc()
+    HAS_REQUESTS = False
 
 SEMP_V2_CONFIG = "/SEMP/v2/config"
 MSG_VPNS = "msgVpns"
@@ -14,7 +23,8 @@ CLIENT_USERNAMES = "clientUsernames"
 QUEUES = "queues"
 SUBSCRIPTIONS = "subscriptions"
 
-""" Collection of utility classes and functions to aid the solace_* modules. """
+MAX_REQUEST_ITEMS = 1000 # 1000 seems to be hardcoded maximum
+
 class SolaceConfig(object):
     """Solace Configuration object"""
     def __init__(self,
@@ -39,6 +49,10 @@ def perform_module_actions(module,
                            create_func,
                            delete_func,
                            update_func):
+    """Generic function for all solace_* modules"""
+
+    if not HAS_REQUESTS:
+        module.fail_json(msg="Missing requests module", exception=REQUESTS_IMP_ERR)
 
     solace_config = SolaceConfig(
         vmr_host=module.params["host"],
@@ -65,11 +79,12 @@ def perform_module_actions(module,
 
     if not ok:
         module.fail_json(msg=resp, **result)
-    configured = resp
-
+    # else response was good
+    current_configuration = resp
+    # whitelist of configuration items that are not returned by GET
     whitelist = ["password"]
 
-    if lookup_item in configured:
+    if lookup_item in current_configuration:
         if module.params["state"] == "absent":
             if not module.check_mode:
                 ok, resp = delete_func(solace_config, *crud_args)
@@ -79,21 +94,20 @@ def perform_module_actions(module,
         else:
             if settings and len(settings.keys()):
                 # compare new settings against configuration
-                current_settings = configured[lookup_item]
+                current_settings = current_configuration[lookup_item]
                 bad_keys = [key for key in settings if key not in current_settings.keys()]
-
                 # remove whitelist items from bad_keys
-                bad_keys = [item for item in bad_keys if not item in whitelist]
+                bad_keys = [item for item in bad_keys if item not in whitelist]
                 # removed keys
                 removed_keys = [item for item in settings if item in whitelist]
                 # fail if any unexpected settings found
                 if len(bad_keys):
                     module.fail_json(msg="Invalid key(s): " + ", ".join(bad_keys), **result)
-
-                changed_keys = [x for x in settings if x in current_settings.keys() and settings[x] != current_settings[x]]
+                # changed keys are those that exist in settings and don't match current settings
+                changed_keys = [x for x in settings if x in current_settings.keys()
+                                and settings[x] != current_settings[x]]
                 # add back in anything from the whitelist
                 changed_keys = changed_keys + removed_keys
-
                 # add any whitelisted items
                 if len(changed_keys):
                     delta_settings = {key:settings[key] for key in changed_keys}
@@ -105,7 +119,7 @@ def perform_module_actions(module,
                     result["delta"] = delta_settings
                     result["response"] = resp
                     result["changed"] = True
-            result["response"] = configured[lookup_item]
+            result["response"] = current_configuration[lookup_item]
     else:
         if module.params["state"] == "present":
             if not module.check_mode:
@@ -218,14 +232,14 @@ def create_topic_endpoint(solace_config, vpn, topic, settings=None):
 def update_topic_endpoint(solace_config, vpn, topic, settings):
     """Update an existing Topic/Endpoint"""
     # escape forwardslashes
-    topic = topic.replace("/","%2F")
+    topic = topic.replace("/", "%2F")
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, TOPIC_ENDPOINTS, topic])
     return _make_patch_request(solace_config, path, settings)
 
 def delete_topic_endpoint(solace_config, vpn, topic):
     """Delete a Topic/Endpoint"""
     # escape forwardslashes
-    topic = topic.replace("/","%2F")
+    topic = topic.replace("/", "%2F")
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, TOPIC_ENDPOINTS, topic])
     return _make_delete_request(solace_config, path)
 
@@ -245,14 +259,14 @@ def create_subscription(solace_config, vpn, queue, topic, settings=None):
 def update_subscription(solace_config, vpn, queue, topic, settings):
     """Update an existing Subscription"""
     # escape forwardslashes
-    topic = topic.replace("/","%2F")
+    topic = topic.replace("/", "%2F")
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, QUEUES, queue, SUBSCRIPTIONS, topic])
     return _make_patch_request(solace_config, path, settings)
 
 def delete_subscription(solace_config, vpn, queue, topic):
     """Delete a Subscription"""
     # escape forwardslashes
-    topic = topic.replace("/","%2F")
+    topic = topic.replace("/", "%2F")
     path = "/".join([SEMP_V2_CONFIG, MSG_VPNS, vpn, QUEUES, queue, SUBSCRIPTIONS, topic])
     return _make_delete_request(solace_config, path)
 
@@ -320,11 +334,11 @@ def _build_config_dict(resp, key):
     return d
 
 def _type_conversion(d):
-    for k, i in d.iteritems():
+    for k, i in d.items():
         t = type(i)
-        if (t == str) and re.search("^[0-9]+$", i):
+        if (t == str) and re.search(r"^[0-9]+$", i):
             d[k] = int(i)
-        elif (t == str) and re.search("^[0-9]+\.[0-9]$", i):
+        elif (t == str) and re.search(r"^[0-9]+\.[0-9]$", i):
             d[k] = float(i)
         elif t == dict:
             d[k] = _type_conversion(i)
@@ -359,7 +373,7 @@ def _parse_bad_response(resp):
 
 def _make_request(func, solace_config, path, json=None):
     if func is requests.get:
-        path += "?count=1000" # TODO: variable-ise this
+        path += "?count=" + str(MAX_REQUEST_ITEMS)
     try:
         return _parse_response(
             func(

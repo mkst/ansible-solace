@@ -1,7 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
 # MIT License
+
+"""Ansible-Solace Module for configuring VPNs"""
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -107,12 +109,9 @@ def run_module():
         supports_check_mode=True
     )
 
-    msg_vpn = module.params["name"]
-    settings = module.params["settings"]
-
     result = su.perform_module_actions(module,
-                                       msg_vpn,
-                                       settings,
+                                       module.params["name"],
+                                       module.params["settings"],
                                        su.get_configured_vpns,
                                        [],
                                        su.create_vpn,
@@ -121,6 +120,7 @@ def run_module():
     module.exit_json(**result)
 
 def main():
+    """Standard boilerplate"""
     run_module()
 
 if __name__ == '__main__':

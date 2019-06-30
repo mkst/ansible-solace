@@ -8,7 +8,7 @@ In order to use these modules, Ansible needs to know about them. You can either 
 ```bash
 ANSIBLE_MODULE_UTILS=$(pwd)/lib/ansible/module_utils \
 ANSIBLE_LIBRARY=$(pwd)/lib/ansible/modules \
-ansible-playbook examples/solace_vpn_add.yml
+ansible-playbook examples/solace_vpn.yml
 ```
 ## EXAMPLES
 

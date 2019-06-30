@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# MIT License
+
+"""Ansible-Solace Module for configuring Subscriptions"""
 from ansible.module_utils.basic import AnsibleModule
 import ansible.module_utils.network.solace.solace_utils as su
 
@@ -21,22 +27,18 @@ def run_module():
         supports_check_mode=True
     )
 
-    msg_vpn = module.params["msg_vpn"]
-    topic = module.params["topic"]
-    queue = module.params["queue"]
-    settings = module.params["settings"]
-
     result = su.perform_module_actions(module,
-                                       topic,
-                                       settings,
+                                       module.params["topic"],
+                                       module.params["settings"],
                                        su.get_configured_subscriptions_for_vpn_and_queue,
-                                       [msg_vpn, queue],
+                                       [module.params["msg_vpn"], module.params["queue"]],
                                        su.create_subscription,
                                        su.delete_subscription,
                                        su.update_subscription)
     module.exit_json(**result)
 
 def main():
+    """Standard boilerplate"""
     run_module()
 
 if __name__ == '__main__':

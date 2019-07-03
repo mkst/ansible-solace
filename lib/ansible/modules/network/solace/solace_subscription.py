@@ -4,8 +4,51 @@
 # MIT License
 
 """Ansible-Solace Module for configuring Subscriptions"""
-from ansible.module_utils.basic import AnsibleModule
 import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
+
+
+class SolaceSubscriptionTask(su.SolaceTask):
+
+    def __init__(self, module):
+        su.SolaceTask.__init__(self, module)
+
+    def lookup_item(self):
+        return self.module.params["topic"]
+
+    def get_args(self):
+        return [self.module.params["msg_vpn"], self.module.params["queue"]]
+
+    def get_func(self, solace_config, vpn, queue):
+        """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, self.SUBSCRIPTIONS]
+        return su.get_configuration(solace_config, path_array, "subscriptionTopic")
+
+    def create_func(self, solace_config, vpn, queue, topic, settings=None):
+        """Create a Subscription for a Topic/Endpoint on a Queue"""
+        defaults = {}
+        mandatory = {
+            "subscriptionTopic": topic
+        }
+        data = su.merge_dicts(defaults, mandatory, settings)
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS])
+
+        return su.make_post_request(solace_config, path, data)
+
+    def update_func(self, solace_config, vpn, queue, topic, settings):
+        """Update an existing Subscription"""
+        # escape forwardslashes
+        topic = topic.replace("/", "%2F")
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
+        return su.make_patch_request(solace_config, path, settings)
+
+    def delete_func(self, solace_config, vpn, queue, topic):
+        """Delete a Subscription"""
+        # escape forwardslashes
+        topic = topic.replace("/", "%2F")
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
+        return su.make_delete_request(solace_config, path)
+
 
 def run_module():
     """Entrypoint to module"""
@@ -27,19 +70,16 @@ def run_module():
         supports_check_mode=True
     )
 
-    result = su.perform_module_actions(module,
-                                       module.params["topic"],
-                                       module.params["settings"],
-                                       su.get_configured_subscriptions_for_vpn_and_queue,
-                                       [module.params["msg_vpn"], module.params["queue"]],
-                                       su.create_subscription,
-                                       su.delete_subscription,
-                                       su.update_subscription)
+    solace_topic_task = SolaceSubscriptionTask(module)
+    result = solace_topic_task.do_task()
+
     module.exit_json(**result)
+
 
 def main():
     """Standard boilerplate"""
     run_module()
+
 
 if __name__ == '__main__':
     main()

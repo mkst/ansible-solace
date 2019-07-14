@@ -9,7 +9,7 @@ ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
     'supported_by': 'community'
-    }
+}
 
 DOCUMENTATION = '''
 ---
@@ -88,8 +88,44 @@ response:
     type: dict
 '''
 
-from ansible.module_utils.basic import AnsibleModule
 import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
+
+
+class SolaceVpnTask(su.SolaceTask):
+
+    def __init__(self, module):
+        su.SolaceTask.__init__(self, module)
+
+    def lookup_item(self):
+        return self.module.params["name"]
+
+    def get_func(self, solace_config: su.SolaceConfig):
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
+        return su.get_configuration(solace_config, path_array, "msgVpnName")
+
+    def create_func(self, solace_config, vpn, settings=None):
+        """Create a VPN"""
+        defaults = {
+            "enabled": True
+        }
+        mandatory = {
+            "msgVpnName": vpn
+        }
+        data = su.merge_dicts(defaults, mandatory, settings)
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
+        return su.make_post_request(solace_config, path, data)
+
+    def update_func(self, solace_config, vpn, settings):
+        """Update an existing VPN"""
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+        return su.make_patch_request(solace_config, path, settings)
+
+    def delete_func(self, solace_config, vpn):
+        """Delete a VPN"""
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+        return su.make_delete_request(solace_config, path)
+
 
 def run_module():
     """Entrypoint to module"""
@@ -104,24 +140,22 @@ def run_module():
         state=dict(default="present", choices=["absent", "present"]),
         timeout=dict(default=1, require=False)
     )
+
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    result = su.perform_module_actions(module,
-                                       module.params["name"],
-                                       module.params["settings"],
-                                       su.get_configured_vpns,
-                                       [],
-                                       su.create_vpn,
-                                       su.delete_vpn,
-                                       su.update_vpn)
+    solace_vpn_task = SolaceVpnTask(module)
+    result = solace_vpn_task.do_task()
+
     module.exit_json(**result)
+
 
 def main():
     """Standard boilerplate"""
     run_module()
+
 
 if __name__ == '__main__':
     main()

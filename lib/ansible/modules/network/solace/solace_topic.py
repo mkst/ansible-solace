@@ -4,8 +4,52 @@
 # MIT License
 
 """Ansible-Solace Module for configuring Topics"""
-from ansible.module_utils.basic import AnsibleModule
 import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
+
+
+class SolaceTopicTask(su.SolaceTask):
+
+    def __init__(self, module):
+        su.SolaceTask.__init__(self, module)
+
+    def lookup_item(self):
+        return self.module.params["name"]
+
+    def get_args(self):
+        return [self.module.params["msg_vpn"]]
+
+    def get_func(self, solace_config, vpn):
+        """Pull configuration for all Topic/Endpoints associated with a given VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS]
+        return su.get_configuration(solace_config, path_array, "topicEndpointName")
+
+    def create_topic_endpoint(self, solace_config, vpn, topic, settings=None):
+        """Create a Topic/Endpoint"""
+        defaults = {}
+        mandatory = {
+            "msgVpnName": vpn,
+            "topicEndpointName": topic
+        }
+        data = su.merge_dicts(defaults, mandatory, settings)
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS])
+
+        return su.make_post_request(solace_config, path, data)
+
+    def update_func(self, solace_config, vpn, topic, settings):
+        """Update an existing Topic/Endpoint"""
+        # escape forwardslashes
+        topic = topic.replace("/", "%2F")
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, topic])
+        return su.make_patch_request(solace_config, path, settings)
+
+    def delete_func(self, solace_config, vpn, topic):
+        """Delete a Topic/Endpoint"""
+        # escape forwardslashes
+        topic = topic.replace("/", "%2F")
+        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, topic])
+        return su.make_delete_request(solace_config, path)
+
 
 def run_module():
     """Entrypoint to module"""
@@ -26,19 +70,16 @@ def run_module():
         supports_check_mode=True
     )
 
-    result = su.perform_module_actions(module,
-                                       module.params["name"],
-                                       module.params["settings"],
-                                       su.get_configured_topic_endpoints_for_vpn,
-                                       [module.params["msg_vpn"]],
-                                       su.create_topic_endpoint,
-                                       su.delete_topic_endpoint,
-                                       su.update_topic_endpoint)
+    solaceTopicTask = SolaceTopicTask(module)
+    result = solaceTopicTask.do_task()
+
     module.exit_json(**result)
+
 
 def main():
     """Standard boilerplate"""
     run_module()
+
 
 if __name__ == '__main__':
     main()

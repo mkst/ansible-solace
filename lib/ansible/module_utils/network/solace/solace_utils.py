@@ -131,16 +131,16 @@ class SolaceTask:
 
         return result
 
-    def get_func(self, solace_config: SolaceConfig, *args):
+    def get_func(self, solace_config, *args):
         return
 
-    def create_func(self, solace_config: SolaceConfig, *args):
+    def create_func(self, solace_config, *args):
         return
 
-    def update_func(self, solace_config: SolaceConfig, *args):
+    def update_func(self, solace_config, *args):
         return
 
-    def delete_func(self, solace_config: SolaceConfig, *args):
+    def delete_func(self, solace_config, *args):
         return
 
     def lookup_item(self):

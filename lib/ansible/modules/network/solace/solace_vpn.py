@@ -100,7 +100,7 @@ class SolaceVpnTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params["name"]
 
-    def get_func(self, solace_config: su.SolaceConfig):
+    def get_func(self, solace_config):
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
         return su.get_configuration(solace_config, path_array, "msgVpnName")
 

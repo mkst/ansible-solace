@@ -21,7 +21,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
 
     def get_func(self, solace_config, vpn, queue):
         """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, self.SUBSCRIPTIONS]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
         return su.get_configuration(solace_config, path_array, "subscriptionTopic")
 
     def create_func(self, solace_config, vpn, queue, topic, settings=None):

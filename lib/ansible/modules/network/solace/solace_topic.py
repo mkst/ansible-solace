@@ -24,7 +24,7 @@ class SolaceTopicTask(su.SolaceTask):
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS]
         return su.get_configuration(solace_config, path_array, "topicEndpointName")
 
-    def create_topic_endpoint(self, solace_config, vpn, topic, settings=None):
+    def create_func(self, solace_config, vpn, topic, settings=None):
         """Create a Topic/Endpoint"""
         defaults = {}
         mandatory = {

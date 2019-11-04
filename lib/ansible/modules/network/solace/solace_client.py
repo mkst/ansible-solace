@@ -14,37 +14,37 @@ class SolaceClientTask(su.SolaceTask):
         su.SolaceTask.__init__(self, module)
 
     def lookup_item(self):
-        return self.module.params["name"]
+        return self.module.params['name']
 
     def get_args(self):
-        return [self.module.params["msg_vpn"]]
+        return [self.module.params['msg_vpn']]
 
     def get_func(self, solace_config, vpn):
         """Pull configuration for all Clients associated with a given VPN"""
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES]
-        return su.get_configuration(solace_config, path_array, "clientUsername")
+        return su.get_configuration(solace_config, path_array, 'clientUsername')
 
     def create_func(self, solace_config, vpn, client, settings=None):
         """Create a Client"""
         defaults = {
-            "enabled": True
+            'enabled': True
         }
         mandatory = {
-            "clientUsername": client,
+            'clientUsername': client,
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES])
 
         return su.make_post_request(solace_config, path, data)
 
     def update_func(self, solace_config, vpn, client, settings=None):
         """Update an existing Client"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES, client])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES, client])
         return su.make_patch_request(solace_config, path, settings)
 
     def delete_func(self, solace_config, vpn, client):
         """Delete a Client"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES, client])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_USERNAMES, client])
         return su.make_delete_request(solace_config, path, None)
 
 
@@ -59,8 +59,8 @@ def run_module():
         username=dict(type='str', default='admin'),
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
-        state=dict(default="present", choices=["absent", "present"]),
-        timeout=dict(default=1, require=False)
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False)
     )
     module = AnsibleModule(
         argument_spec=module_args,

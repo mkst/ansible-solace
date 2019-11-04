@@ -14,36 +14,36 @@ class SolaceClientProfileTask(su.SolaceTask):
         su.SolaceTask.__init__(self, module)
 
     def lookup_item(self):
-        return self.module.params["name"]
+        return self.module.params['name']
 
     def get_args(self):
-        return [self.module.params["msg_vpn"]]
+        return [self.module.params['msg_vpn']]
 
     def get_func(self, solace_config, vpn):
         """Pull configuration for all Client Profiles associated with a given VPN"""
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES]
-        return su.get_configuration(solace_config, path_array, "clientProfileName")
+        return su.get_configuration(solace_config, path_array, 'clientProfileName')
 
     def create_func(self, solace_config, vpn, client_profile, settings=None):
         """Create a Client Profile"""
         defaults = {
         }
         mandatory = {
-            "clientProfileName": client_profile
+            'clientProfileName': client_profile
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES])
 
         return su.make_post_request(solace_config, path, data)
 
     def update_func(self, solace_config, vpn, client_profile, settings=None):
         """Update an existing Client Profile"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
         return su.make_patch_request(solace_config, path, settings)
 
     def delete_func(self, solace_config, vpn, client_profile):
         """Delete a Client Profile"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
         return su.make_delete_request(solace_config, path)
 
 
@@ -58,8 +58,8 @@ def run_module():
         username=dict(type='str', default='admin'),
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
-        state=dict(default="present", choices=["absent", "present"]),
-        timeout=dict(default=1, require=False)
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False)
     )
     module = AnsibleModule(
         argument_spec=module_args,

@@ -98,32 +98,32 @@ class SolaceVpnTask(su.SolaceTask):
         su.SolaceTask.__init__(self, module)
 
     def lookup_item(self):
-        return self.module.params["name"]
+        return self.module.params['name']
 
     def get_func(self, solace_config):
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
-        return su.get_configuration(solace_config, path_array, "msgVpnName")
+        return su.get_configuration(solace_config, path_array, 'msgVpnName')
 
     def create_func(self, solace_config, vpn, settings=None):
         """Create a VPN"""
         defaults = {
-            "enabled": True
+            'enabled': True
         }
         mandatory = {
-            "msgVpnName": vpn
+            'msgVpnName': vpn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
         return su.make_post_request(solace_config, path, data)
 
     def update_func(self, solace_config, vpn, settings):
         """Update an existing VPN"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
         return su.make_patch_request(solace_config, path, settings)
 
     def delete_func(self, solace_config, vpn):
         """Delete a VPN"""
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
         return su.make_delete_request(solace_config, path)
 
 
@@ -137,8 +137,8 @@ def run_module():
         username=dict(type='str', default='admin'),
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
-        state=dict(default="present", choices=["absent", "present"]),
-        timeout=dict(default=1, require=False)
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False)
     )
 
     module = AnsibleModule(

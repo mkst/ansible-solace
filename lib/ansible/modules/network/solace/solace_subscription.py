@@ -14,39 +14,39 @@ class SolaceSubscriptionTask(su.SolaceTask):
         su.SolaceTask.__init__(self, module)
 
     def lookup_item(self):
-        return self.module.params["topic"]
+        return self.module.params['topic']
 
     def get_args(self):
-        return [self.module.params["msg_vpn"], self.module.params["queue"]]
+        return [self.module.params['msg_vpn'], self.module.params['queue']]
 
     def get_func(self, solace_config, vpn, queue):
         """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
-        return su.get_configuration(solace_config, path_array, "subscriptionTopic")
+        return su.get_configuration(solace_config, path_array, 'subscriptionTopic')
 
     def create_func(self, solace_config, vpn, queue, topic, settings=None):
         """Create a Subscription for a Topic/Endpoint on a Queue"""
         defaults = {}
         mandatory = {
-            "subscriptionTopic": topic
+            'subscriptionTopic': topic
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS])
 
         return su.make_post_request(solace_config, path, data)
 
     def update_func(self, solace_config, vpn, queue, topic, settings):
         """Update an existing Subscription"""
         # escape forwardslashes
-        topic = topic.replace("/", "%2F")
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
+        topic = topic.replace('/', '%2F')
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
         return su.make_patch_request(solace_config, path, settings)
 
     def delete_func(self, solace_config, vpn, queue, topic):
         """Delete a Subscription"""
         # escape forwardslashes
-        topic = topic.replace("/", "%2F")
-        path = "/".join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
+        topic = topic.replace('/', '%2F')
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
         return su.make_delete_request(solace_config, path)
 
 
@@ -62,8 +62,8 @@ def run_module():
         username=dict(type='str', default='admin'),
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
-        state=dict(default="present", choices=["absent", "present"]),
-        timeout=dict(default=1, require=False)
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False)
     )
     module = AnsibleModule(
         argument_spec=module_args,

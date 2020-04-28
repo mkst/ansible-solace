@@ -1,0 +1,84 @@
+- name: Playbook to add a DMR Cluster named 'foo'
+  hosts: localhost
+  tasks:
+  - name: Remove 'foo' DMR Cluster
+    solace_dmr:
+      name: foo
+      state: absent
+      password: Solace123!
+  - name: Add 'foo' DMR Cluster
+    solace_dmr:
+      name: foo
+      state: present
+      password: Solace123!
+      settings:
+        tlsServerCertMaxChainDepth: 6
+        authenticationBasicPassword: Solace123!
+    register: testout
+
+  - name: dump output
+    debug:
+      msg: '{{ testout }}'
+
+  - name: Remove 'remoteNode' DMR Link
+    solace_link:
+      name: remoteNode
+      dmr: foo
+      state: absent
+      password: Solace123!
+
+  - name: Add 'remoteNode' DMR Link
+    solace_link:
+      name: remoteNode
+      dmr: foo
+      state: present
+      password: Solace123!
+      settings:
+        enabled: false
+        authenticationBasicPassword: Solace123!
+        span: internal
+        initiator: local
+
+  - name: Remove 'remoteNode' DMR Link Remote address
+    solace_link_remote_address:
+      name: 192.168.0.34
+      remote_node_name: remoteNode
+      dmr: foo
+      state: absent
+      password: Solace123!
+
+  - name: Add 'remoteNode' DMR Link Remote address
+    solace_link_remote_address:
+      name: 192.168.0.34
+      remote_node_name: remoteNode
+      dmr: foo
+      state: present
+      password: Solace123!
+
+  - name: Remove 'remoteNode' DMR Link Trusted CN
+    solace_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      remote_node_name: remoteNode
+      dmr: foo
+      state: absent
+      password: Solace123!
+
+  - name: Add 'remoteNode' DMR Link Trusted CN
+    solace_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      x_broker: my.broker
+      remote_node_name: remoteNode
+      dmr: foo
+      state: present
+      password: Solace123!
+
+
+  - name: Enable 'remoteNode' DMR Link
+    solace_link:
+      name: remoteNode
+      dmr: foo
+      password: Solace123!
+      settings:
+        enabled: true
+        egressFlowWindowSize: 127
+

@@ -1,0 +1,109 @@
+- name: Playbook to add a ACL profile named 'new_acl'
+  hosts: localhost
+  vars:
+    msg_vpn: default
+    password: Solace123!
+    acl_profile: new_acl
+    client_address: 192.168.1.64/26
+    publish_topic: topic/#
+  tasks:
+
+  - name: Remove ACL Profile
+    solace_acl_profile:
+      password: "{{ password }}"
+      name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL Profile
+    solace_acl_profile:
+      password: "{{ password }}"
+      name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      settings:
+        clientConnectDefaultAction: allow
+
+  - name: Update ACL Profile
+    solace_acl_profile:
+      password: "{{ password }}"
+      name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      settings:
+        publishTopicDefaultAction: allow
+        
+  - name: Remove ACL Client Connect Exception
+    solace_acl_connect:
+      password: "{{ password }}"
+      name: "{{client_address}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL Client Connect Exception
+    solace_acl_connect:
+      password: "{{ password }}"
+      name: "{{client_address}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+
+  - name: Remove MQTT ACL Publish Exception
+    solace_acl_publish:
+      password: "{{ password }}"
+      name: "{{publish_topic}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL MQTT Publish Exception
+    solace_acl_publish:
+      password: "{{ password }}"
+      name: "{{publish_topic}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      topic_syntax: mqtt
+
+  - name: Remove ACL Publish Exception
+    solace_acl_publish:
+      password: "{{ password }}"
+      name: events/>
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL Publish Exception
+    solace_acl_publish:
+      password: "{{ password }}"
+      name: events/>
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+
+  - name: Remove MQTT ACL Subscribe Exception
+    solace_acl_subscribe:
+      password: "{{ password }}"
+      name: "{{publish_topic}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL MQTT Subscribe Exception
+    solace_acl_subscribe:
+      password: "{{ password }}"
+      name: "{{publish_topic}}"
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      topic_syntax: mqtt
+
+  - name: Remove ACL Subscribe Exception
+    solace_acl_subscribe:
+      password: "{{ password }}"
+      name: events/>
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"
+      state: absent
+
+  - name: Add ACL Subscribe Exception
+    solace_acl_subscribe:
+      password: "{{ password }}"
+      name: events/>
+      acl_profile_name: "{{ acl_profile }}"
+      msg_vpn: "{{ msg_vpn }}"

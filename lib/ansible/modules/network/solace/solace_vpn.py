@@ -59,6 +59,10 @@ options:
         description:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
+    x_broker:
+        description: 
+            - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
+        required: false
 
 author:
     - Mark Street (mkst@protonmail.com)
@@ -138,7 +142,8 @@ def run_module():
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
         state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False)
+        timeout=dict(default='1', require=False),
+        x_broker=dict(type='str', default='')
     )
 
     module = AnsibleModule(

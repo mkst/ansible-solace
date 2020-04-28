@@ -47,7 +47,7 @@ Status of the `solace_*` modules:
 | [solace_acl_profile](lib/ansible/modules/network/solace/solace_acl_profile.py) | aclProfile/ | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_connect](lib/ansible/modules/network/solace/solace_acl_connect.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_publish](lib/ansible/modules/network/solace/solace_acl_publish.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
-| [solace_acl_subscribe.py](lib/ansible/modules/network/solace/solace_acl_subscribe.py.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
+| [solace_acl_subscribe.py](lib/ansible/modules/network/solace/solace_acl_subscribe.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | solace_authorization_group | authorizationGroup | Action | | |
 | [solace_bridge](lib/ansible/modules/network/solace/solace_bridge.py) | bridge | Action | :sunny: | [:page_facing_up:](examples/solace_bridge.yml)|
 | [solace_bridge_remote_subscription](lib/ansible/modules/network/solace/solace_bridge_remote_subscription.py) | bridge | Action | :sunny: | [:page_facing_up:](examples/solace_bridge.yml)|

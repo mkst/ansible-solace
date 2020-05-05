@@ -8,10 +8,6 @@
 import re
 import traceback
 
-
-''' log file '''
-LOG_FILE = open('solace.log', 'a') 
-
 try:
     import requests
 
@@ -62,16 +58,14 @@ class SolaceConfig(object):
                  vmr_port,
                  vmr_auth,
                  vmr_secure=False,
-                 vmr_timeout=5,
+                 vmr_timeout=1,
                  x_broker=''):
         self.vmr_auth = vmr_auth
         self.vmr_timeout = float(vmr_timeout)
 
         self.vmr_url = ('https' if vmr_secure else 'http') + '://' + vmr_host + ':' + str(vmr_port)
         self.x_broker = x_broker
-        global SEMP_V2_CONFIG
-        '''if x_broker:
-            SEMP_V2_CONFIG = '/dev/SEMP/v2/config' '''
+
 
 class SolaceTask:
 
@@ -216,9 +210,7 @@ def _type_conversion(d):
 
 def get_configuration(solace_config, path_array, key):
     path = '/'.join(path_array)
-    '''LOG_FILE.write (path + '\n')'''
     ok, resp = make_get_request(solace_config, path)
-    LOG_FILE.write('get config response ' + str (resp) + '\n')
     if ok:
         return True, _build_config_dict(resp, key)
     return False, resp
@@ -227,7 +219,7 @@ def get_configuration(solace_config, path_array, key):
 # request/response handling
 def _parse_response(resp):
     if resp.status_code is not 200:
-        return True, _parse_bad_response(resp)
+        return False, _parse_bad_response(resp)
     return True, _parse_good_response(resp)
 
 
@@ -239,17 +231,13 @@ def _parse_good_response(resp):
 
 
 def _parse_bad_response(resp):
-    LOG_FILE.write(str(resp.status_code) + '\n')
-    LOG_FILE.write(str(resp) + '\n')
-    try:
-        j = resp.json()
-        if 'meta' in j.keys() and \
-                'error' in j['meta'].keys() and \
-                'description' in j['meta']['error'].keys():
-            return j['meta']['error']['description']
-        return 'Unknown error'
-    except ValueError:
-        return {}
+    j = resp.json()
+    if 'meta' in j.keys() and \
+            'error' in j['meta'].keys() and \
+            'description' in j['meta']['error'].keys():
+        return j['meta']['error']['description']
+    return 'Unknown error'
+
 
 def _make_request(func, solace_config, path, json=None):
     if func is requests.get:
@@ -261,7 +249,7 @@ def _make_request(func, solace_config, path, json=None):
                 json=json,
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
-                headers = {'x-broker-name': solace_config.x_broker}
+                headers = {'x-broker': solace_config.x_broker}
             )
         )
     except requests.exceptions.ConnectionError as e:

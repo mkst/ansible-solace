@@ -44,7 +44,7 @@ Status of the `solace_*` modules:
 | Module | SEMP Endpoint | Type | Status | Example |
 | ------ | ------------- |:----:|:------:|:-------:|
 | solace_about | about | Query | | |
-| [solace_acl_profile](lib/ansible/modules/network/solace/solace_acl_profile.py) | aclProfile/ | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
+| [solace_acl_profile](lib/ansible/modules/network/solace/solace_acl_profile.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_connect](lib/ansible/modules/network/solace/solace_acl_connect.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_publish](lib/ansible/modules/network/solace/solace_acl_publish.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_connect](lib/ansible/modules/network/solace/solace_acl_connect.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |

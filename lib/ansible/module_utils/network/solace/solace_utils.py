@@ -26,6 +26,8 @@ ACL_PROFILES = 'aclProfiles'
 ACL_PROFILES_CLIENT_CONNECT_EXCEPTIONS = 'clientConnectExceptions'
 ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
 ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
+ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
+ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
 CLIENT_PROFILES = 'clientProfiles'
 CLIENT_USERNAMES = 'clientUsernames'
 DMR_BRIDGES = 'dmrBridges'
@@ -249,7 +251,7 @@ def _make_request(func, solace_config, path, json=None):
                 json=json,
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
-                headers = {'x-broker': solace_config.x_broker}
+                headers = {'x-broker-name': solace_config.x_broker}
             )
         )
     except requests.exceptions.ConnectionError as e:

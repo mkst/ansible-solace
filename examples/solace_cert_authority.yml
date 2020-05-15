@@ -3,14 +3,12 @@
   tasks:
   - name: Remove 'digicert' cert authority
     solace_cert_authority:
-      password: Solace123!
       name: digicert
       state: absent
 
 
   - name: Add 'digicert' VPN
     solace_cert_authority:
-      password: Solace123!
       name: digicert
       state: present
       cert_content: |
@@ -39,7 +37,6 @@
 
   - name: Add 'digicert' VPN
     solace_cert_authority:
-      password: Solace123!
       name: digicert
       settings: 
         ocspTimeout: 25

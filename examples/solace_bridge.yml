@@ -6,14 +6,12 @@
     remote_vpn: default
     remote_vpn_location: 192.168.0.34:55555
     virtual_router: auto
-    password: Solace123!
     trusted_cn: www.solace.com
     remote_subscription: data/>
   tasks:
 
   - name: Remove Bridge
     solace_bridge:
-      password: "{{ password }}"
       name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
       virtual_router: "{{ virtual_router }}"
@@ -21,7 +19,6 @@
 
   - name: Add Bridge
     solace_bridge:
-      password: "{{ password }}"
       name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
       virtual_router: "{{ virtual_router }}"
@@ -33,7 +30,6 @@
 
   - name: Update bridge
     solace_bridge:
-      password: "{{ password }}"
       name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
       virtual_router: "{{ virtual_router }}"
@@ -43,7 +39,6 @@
 
   - name: Remove Bridge Remote VPN
     solace_bridge_remote_vpn:
-      password: "{{ password }}"
       name: "{{ remote_vpn }}"
       bridge_name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
@@ -53,7 +48,6 @@
 
   - name: Add Bridge Remote VPN
     solace_bridge_remote_vpn:
-      password: "{{ password }}"
       name: "{{ remote_vpn }}"
       msg_vpn: "{{ msg_vpn }}"
       bridge_name: "{{ bridge }}"
@@ -66,7 +60,6 @@
 
   - name: Update bridge remote VPN
     solace_bridge_remote_vpn:
-      password: "{{ password }}"
       name: "{{ remote_vpn }}"
       msg_vpn: "{{ msg_vpn }}"
       virtual_router: "{{ virtual_router }}"
@@ -78,7 +71,6 @@
 
   - name: Remove Trusted Common Name
     solace_bridge_tls_cn:
-      password: "{{ password }}"
       name: "{{ trusted_cn }}"
       bridge_name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
@@ -87,7 +79,6 @@
 
   - name: Add Trusted Common Name
     solace_bridge_tls_cn:
-      password: "{{ password }}"
       name: "{{ trusted_cn }}"
       msg_vpn: "{{ msg_vpn }}"
       bridge_name: "{{ bridge }}"
@@ -95,7 +86,6 @@
 
   - name: Update Trusted Common Name
     solace_bridge_tls_cn:
-      password: "{{ password }}"
       name: "{{ trusted_cn }}"
       msg_vpn: "{{ msg_vpn }}"
       virtual_router: "{{ virtual_router }}"
@@ -103,7 +93,6 @@
 
   - name: Remove Remote Subscription
     solace_bridge_remote_subscription:
-      password: "{{ password }}"
       name: "{{ remote_subscription }}"
       bridge_name: "{{ bridge }}"
       msg_vpn: "{{ msg_vpn }}"
@@ -113,7 +102,6 @@
 
   - name: Add Remote Subscription
     solace_bridge_remote_subscription:
-      password: "{{ password }}"
       name: "{{ remote_subscription }}"
       msg_vpn: "{{ msg_vpn }}"
       bridge_name: "{{ bridge }}"

@@ -11,7 +11,7 @@
       state: present
       settings:
         tlsServerCertMaxChainDepth: 6
-        authenticationBasicPassword: Solace123!
+        authenticationBasicPassword: secret_password
     register: testout
 
   - name: dump output
@@ -31,7 +31,7 @@
       state: present
       settings:
         enabled: false
-        authenticationBasicPassword: Solace123!
+        authenticationBasicPassword: secret_password
         span: internal
         initiator: local
 

@@ -70,6 +70,7 @@ class SolaceConfig(object):
 
 
 class SolaceTask:
+    getall_omit_count = True
 
     def __init__(self, module):
         self.module = module
@@ -242,8 +243,8 @@ def _parse_bad_response(resp):
 
 
 def _make_request(func, solace_config, path, json=None):
-    if func is requests.get:
-        """ path += '?count=' + str(MAX_REQUEST_ITEMS) """
+    if func is requests.get and not SolaceTask.getall_omit_count:
+        path += '?count=' + str(MAX_REQUEST_ITEMS)
     try:
         return _parse_response(
             func(

@@ -10,6 +10,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 class SolaceBridgeRemoteVpnTask(su.SolaceTask):
+    getall_omit_count = True
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)

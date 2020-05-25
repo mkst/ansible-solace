@@ -1,2 +1,4 @@
 *.pyc
 *.retry
+lib/ansible/module_utils/network/.DS_Store
+.DS_Store

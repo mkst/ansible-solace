@@ -17,12 +17,37 @@ except ImportError as error:
     HAS_REQUESTS = False
 
 SEMP_V2_CONFIG = '/SEMP/v2/config'
+
+""" VPN level reources """
+
 MSG_VPNS = 'msgVpns'
 TOPIC_ENDPOINTS = 'topicEndpoints'
+ACL_PROFILES = 'aclProfiles'
+ACL_PROFILES_CLIENT_CONNECT_EXCEPTIONS = 'clientConnectExceptions'
+ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
+ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
+ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
+ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
 CLIENT_PROFILES = 'clientProfiles'
 CLIENT_USERNAMES = 'clientUsernames'
+DMR_BRIDGES = 'dmrBridges'
+BRIDGES = 'bridges'
+BRIDGES_REMOTE_MSG_VPNS = 'remoteMsgVpns'
+BRIDGES_REMOTE_SUBSCRIPTIONS = 'remoteSubscriptions'
+BRIDGES_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
+
 QUEUES = 'queues'
 SUBSCRIPTIONS = 'subscriptions'
+
+""" DMR Resources """
+DMR_CLUSTERS = 'dmrClusters'
+LINKS = 'links'
+REMOTE_ADDRESSES = 'remoteAddresses'
+TLS_TRUSTED_COMMON_NAMES= 'tlsTrustedCommonNames'
+""" cert authority resources """
+CERT_AUTHORITIES = 'certAuthorities'
+
+
 
 MAX_REQUEST_ITEMS = 1000  # 1000 seems to be hardcoded maximum
 
@@ -35,14 +60,17 @@ class SolaceConfig(object):
                  vmr_port,
                  vmr_auth,
                  vmr_secure=False,
-                 vmr_timeout=1):
+                 vmr_timeout=1,
+                 x_broker=''):
         self.vmr_auth = vmr_auth
         self.vmr_timeout = float(vmr_timeout)
 
         self.vmr_url = ('https' if vmr_secure else 'http') + '://' + vmr_host + ':' + str(vmr_port)
+        self.x_broker = x_broker
 
 
 class SolaceTask:
+    getall_omit_count = True
 
     def __init__(self, module):
         self.module = module
@@ -51,7 +79,8 @@ class SolaceTask:
             vmr_port=self.module.params['port'],
             vmr_auth=(self.module.params['username'], self.module.params['password']),
             vmr_secure=self.module.params['secure_connection'],
-            vmr_timeout=self.module.params['timeout']
+            vmr_timeout=self.module.params['timeout'],
+            x_broker=self.module.params.get('x_broker', '')
         )
         return
 
@@ -215,7 +244,7 @@ def _parse_bad_response(resp):
 
 
 def _make_request(func, solace_config, path, json=None):
-    params = {'count': MAX_REQUEST_ITEMS} if func is requests.get else None
+    params = {'count': MAX_REQUEST_ITEMS} if (func is requests.get and not SolaceTask.getall_omit_count) else None
     try:
         return _parse_response(
             func(
@@ -223,6 +252,7 @@ def _make_request(func, solace_config, path, json=None):
                 json=json,
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
+                headers = {'x-broker-name': solace_config.x_broker},
                 params=params
             )
         )

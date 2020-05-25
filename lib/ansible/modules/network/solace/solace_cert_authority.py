@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring VPNs"""
+"""Ansible-Solace Module for configuring cert_authoritys"""
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -13,23 +14,23 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: solace_vpn
+module: solace_cert_authority
 
-short_description: Configure VPNs on Solace Appliances
+short_description: Configure cert authorities on Solace Appliances
 
 version_added: "2.9"
 
 description:
-    - "Allows addition, removal and configuration of VPNs on Solace Applicances in an idempotent manner."
+    - "Allows addition, removal and configuration of cert authorities on Solace Applicances in an idempotent manner."
 
 options:
     name:
         description:
-            - This is the name of the VPN being configured
+            - This is the name of the cert authority being configured
         required: true
     state:
         description:
-            - Target state of the VPN, present/absent
+            - Target state of the cert authority, present/absent
         required: false
     host:
         description:
@@ -66,24 +67,11 @@ options:
 
 author:
     - Mark Street (mkst@protonmail.com)
+    - Swen-Helge Huber (swen-helge.huber@solace.com)
 '''
 
 EXAMPLES = '''
-# Create a vpn with default settings
-- name: Create vpn foo
-  solace_vpn:
-    name: foo
-# Ensure a vpn called bar does not exist
-- name: Remove vpn bar
-  solace_vpn:
-    name: bar
-    state: absent
-# Set specific vpn setting on foo
-- name: Set MQTT listen port to 1234 on vpn foo
-  solace_vpn:
-    name: foo
-    settings:
-      serviceMqttPlainTextListenPort: 1234
+
 '''
 
 RETURN = '''
@@ -96,7 +84,7 @@ import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
 
-class SolaceVpnTask(su.SolaceTask):
+class SolaceCertAuthorityTask(su.SolaceTask):
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -104,30 +92,33 @@ class SolaceVpnTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config):
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
-        return su.get_configuration(solace_config, path_array, 'msgVpnName')
+    def get_func(self, solace_config, cert_content):
+        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES]
+        return su.get_configuration(solace_config, path_array, 'certAuthorityName')
 
-    def create_func(self, solace_config, vpn, settings=None):
-        """Create a VPN"""
+    def get_args(self):
+        return [self.module.params['cert_content']]
+
+    def create_func(self, solace_config, cert_content, cert_authority, settings=None):
+        """Create a cert_authority"""
         defaults = {
-            'enabled': True
+            'certContent': cert_content
         }
         mandatory = {
-            'msgVpnName': vpn
+            'certAuthorityName': cert_authority,
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES])
         return su.make_post_request(solace_config, path, data)
 
-    def update_func(self, solace_config, vpn, settings):
-        """Update an existing VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+    def update_func(self, solace_config, cert_content, cert_authority, settings):
+        """Update an existing cert_authority"""
+        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, cert_authority])
         return su.make_patch_request(solace_config, path, settings)
 
-    def delete_func(self, solace_config, vpn):
-        """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+    def delete_func(self, solace_config, cert_content, cert_authority):
+        """Delete a cert_authority"""
+        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, cert_authority])
         return su.make_delete_request(solace_config, path)
 
 
@@ -135,6 +126,7 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
+        cert_content=dict(type='str', default=''),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -151,8 +143,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_vpn_task = SolaceVpnTask(module)
-    result = solace_vpn_task.do_task()
+    solace_cert_authority_task = SolaceCertAuthorityTask(module)
+    result = solace_cert_authority_task.do_task()
 
     module.exit_json(**result)
 

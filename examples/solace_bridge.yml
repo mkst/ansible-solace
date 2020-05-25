@@ -1,0 +1,109 @@
+- name: Playbook to add a bridge named 'mybridge'
+  hosts: localhost
+  vars:
+    msg_vpn: default
+    bridge: mybridge
+    remote_vpn: default
+    remote_vpn_location: 192.168.0.34:55555
+    virtual_router: auto
+    trusted_cn: www.solace.com
+    remote_subscription: data/>
+  tasks:
+
+  - name: Remove Bridge
+    solace_bridge:
+      name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      state: absent
+
+  - name: Add Bridge
+    solace_bridge:
+      name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      settings:
+        enabled: false
+        remoteAuthenticationBasicClientUsername: default 
+        remoteAuthenticationBasicPassword: password
+        remoteAuthenticationScheme: basic
+
+  - name: Update bridge
+    solace_bridge:
+      name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      settings:
+        enabled: true
+    register: testout
+
+  - name: Remove Bridge Remote VPN
+    solace_bridge_remote_vpn:
+      name: "{{ remote_vpn }}"
+      bridge_name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      remote_vpn_location: "{{remote_vpn_location}}"
+      virtual_router: "{{ virtual_router }}"
+      state: absent
+
+  - name: Add Bridge Remote VPN
+    solace_bridge_remote_vpn:
+      name: "{{ remote_vpn }}"
+      msg_vpn: "{{ msg_vpn }}"
+      bridge_name: "{{ bridge }}"
+      remote_vpn_location: "{{remote_vpn_location}}"
+      virtual_router: "{{ virtual_router }}"
+      settings:
+        enabled: false
+        clientUsername: default
+        password: password
+
+  - name: Update bridge remote VPN
+    solace_bridge_remote_vpn:
+      name: "{{ remote_vpn }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      bridge_name: "{{ bridge }}"
+      remote_vpn_location: "{{remote_vpn_location}}"
+      settings:
+        enabled: true
+
+
+  - name: Remove Trusted Common Name
+    solace_bridge_tls_cn:
+      name: "{{ trusted_cn }}"
+      bridge_name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      state: absent
+
+  - name: Add Trusted Common Name
+    solace_bridge_tls_cn:
+      name: "{{ trusted_cn }}"
+      msg_vpn: "{{ msg_vpn }}"
+      bridge_name: "{{ bridge }}"
+      virtual_router: "{{ virtual_router }}"
+
+  - name: Update Trusted Common Name
+    solace_bridge_tls_cn:
+      name: "{{ trusted_cn }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      bridge_name: "{{ bridge }}"
+
+  - name: Remove Remote Subscription
+    solace_bridge_remote_subscription:
+      name: "{{ remote_subscription }}"
+      bridge_name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      deliver_always: false
+      state: absent
+
+  - name: Add Remote Subscription
+    solace_bridge_remote_subscription:
+      name: "{{ remote_subscription }}"
+      msg_vpn: "{{ msg_vpn }}"
+      bridge_name: "{{ bridge }}"
+      virtual_router: "{{ virtual_router }}"
+      deliver_always: true

@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring Topics"""
+"""Ansible-Solace Module for configuring Client Profiles"""
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
 
-class SolaceTopicTask(su.SolaceTask):
+class SolaceACLProfileTask(su.SolaceTask):
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -20,34 +21,32 @@ class SolaceTopicTask(su.SolaceTask):
         return [self.module.params['msg_vpn']]
 
     def get_func(self, solace_config, vpn):
-        """Pull configuration for all Topic/Endpoints associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS]
-        return su.get_configuration(solace_config, path_array, 'topicEndpointName')
+        """Pull configuration for all Client Profiles associated with a given VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES]
+        return su.get_configuration(solace_config, path_array, 'aclProfileName')
 
-    def create_func(self, solace_config, vpn, topic, settings=None):
-        """Create a Topic/Endpoint"""
-        defaults = {}
-        mandatory = {
+    def create_func(self, solace_config, vpn, acl_profile, settings=None):
+        """Create a Client Profile"""
+        defaults = {
             'msgVpnName': vpn,
-            'topicEndpointName': topic
+            
+        }
+        mandatory = {
+            'aclProfileName': acl_profile
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES])
 
         return su.make_post_request(solace_config, path, data)
 
-    def update_func(self, solace_config, vpn, topic, settings):
-        """Update an existing Topic/Endpoint"""
-        # escape forwardslashes
-        topic = topic.replace('/', '%2F')
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, topic])
+    def update_func(self, solace_config, vpn, acl_profile, settings=None):
+        """Update an existing Client Profile"""
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile])
         return su.make_patch_request(solace_config, path, settings)
 
-    def delete_func(self, solace_config, vpn, topic):
-        """Delete a Topic/Endpoint"""
-        # escape forwardslashes
-        topic = topic.replace('/', '%2F')
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, topic])
+    def delete_func(self, solace_config, vpn, acl_profile):
+        """Delete a Client Profile"""
+        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile])
         return su.make_delete_request(solace_config, path)
 
 
@@ -71,8 +70,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solaceTopicTask = SolaceTopicTask(module)
-    result = solaceTopicTask.do_task()
+    solace_acl_profile_task = SolaceACLProfileTask(module)
+    result = solace_acl_profile_task.do_task()
 
     module.exit_json(**result)
 

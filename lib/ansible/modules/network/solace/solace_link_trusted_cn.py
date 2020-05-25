@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
 """Ansible-Solace Module for configuring VPNs"""
@@ -13,31 +14,37 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: solace_vpn
+module: solace_dmr
 
-short_description: Configure VPNs on Solace Appliances
+short_description: Configure DMR Cluster on Solace Appliances
 
 version_added: "2.9"
 
 description:
-    - "Allows addition, removal and configuration of VPNs on Solace Applicances in an idempotent manner."
+    - "Allows addition, removal and configuration of DMR Clusters on Solace Brokers in an idempotent manner."
 
 options:
     name:
         description:
-            - This is the name of the VPN being configured
+            - This is the trusted tls common name of the DMR link being configured
+        required: true
+    remote_node_name: 
+            - Remote node name, identifier of the DMR link
+        required: true
+    dmr:
+            - Name of the DMR Cluster
         required: true
     state:
         description:
-            - Target state of the VPN, present/absent
+            - Target state of the DMR Cluster, present/absent
         required: false
     host:
         description:
-            - Hostname of Solace Appliance, default is "localhost"
+            - Hostname of Solace Broker, default is "localhost"
         required: false
     port:
         description:
-            - Management port of Solace Appliance, default is 8080
+            - Management port of Solace Broker, default is 8080
         required: false
     secure_connection:
         description:
@@ -45,11 +52,11 @@ options:
         required: false
     username:
         description:
-            - Administrator username for Solace Appliance, defaults is "admin"
+            - Administrator username for Solace Broker, defaults is "admin"
         required: false
     password:
         description:
-            - Administrator password for Solace Appliance, defaults is "admin"
+            - Administrator password for Solace Broker, defaults is "admin"
         required: false
     settings:
         description:
@@ -66,24 +73,11 @@ options:
 
 author:
     - Mark Street (mkst@protonmail.com)
+    - Swen-Helge Huber (swen-helge.huber@solace.com)
 '''
 
 EXAMPLES = '''
-# Create a vpn with default settings
-- name: Create vpn foo
-  solace_vpn:
-    name: foo
-# Ensure a vpn called bar does not exist
-- name: Remove vpn bar
-  solace_vpn:
-    name: bar
-    state: absent
-# Set specific vpn setting on foo
-- name: Set MQTT listen port to 1234 on vpn foo
-  solace_vpn:
-    name: foo
-    settings:
-      serviceMqttPlainTextListenPort: 1234
+
 '''
 
 RETURN = '''
@@ -96,7 +90,7 @@ import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
 
-class SolaceVpnTask(su.SolaceTask):
+class SolaceLinkTrustedCNTask(su.SolaceTask):
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -104,30 +98,29 @@ class SolaceVpnTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config):
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
-        return su.get_configuration(solace_config, path_array, 'msgVpnName')
+    def get_func(self, solace_config, dmr, link):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
+        return su.get_configuration(solace_config, path_array, 'tlsTrustedCommonName')
 
-    def create_func(self, solace_config, vpn, settings=None):
-        """Create a VPN"""
+    def get_args(self):
+        return [self.module.params['dmr'],self.module.params['remote_node_name']]
+
+    def create_func(self, solace_config, dmr, link, trusted_cn, settings=None):
+        """Create a DMR Cluster"""
         defaults = {
-            'enabled': True
+            'dmrClusterName': dmr,
+            'remoteNodeName': link
         }
         mandatory = {
-            'msgVpnName': vpn
+            'tlsTrustedCommonName': trusted_cn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES])
         return su.make_post_request(solace_config, path, data)
 
-    def update_func(self, solace_config, vpn, settings):
-        """Update an existing VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
-        return su.make_patch_request(solace_config, path, settings)
-
-    def delete_func(self, solace_config, vpn):
+    def delete_func(self, solace_config, dmr, link, trusted_cn ):
         """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
+        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, trusted_cn])
         return su.make_delete_request(solace_config, path)
 
 
@@ -135,6 +128,8 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
+        dmr=dict(type='str', required=True),
+        remote_node_name=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -151,8 +146,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_vpn_task = SolaceVpnTask(module)
-    result = solace_vpn_task.do_task()
+    solace_link_trusted_cn_task = SolaceLinkTrustedCNTask(module)
+    result = solace_link_trusted_cn_task.do_task()
 
     module.exit_json(**result)
 

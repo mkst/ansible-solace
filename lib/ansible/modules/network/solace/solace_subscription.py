@@ -35,13 +35,6 @@ class SolaceSubscriptionTask(su.SolaceTask):
 
         return su.make_post_request(solace_config, path, data)
 
-    def update_func(self, solace_config, vpn, queue, topic, settings):
-        """Update an existing Subscription"""
-        # escape forwardslashes
-        topic = topic.replace('/', '%2F')
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
-        return su.make_patch_request(solace_config, path, settings)
-
     def delete_func(self, solace_config, vpn, queue, topic):
         """Delete a Subscription"""
         # escape forwardslashes
@@ -63,7 +56,8 @@ def run_module():
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
         state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False)
+        timeout=dict(default='1', require=False),
+        x_broker=dict(type='str', default='')
     )
     module = AnsibleModule(
         argument_spec=module_args,

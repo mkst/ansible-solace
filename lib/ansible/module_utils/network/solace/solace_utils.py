@@ -139,14 +139,15 @@ class SolaceTask:
                     if len(changed_keys):
                         delta_settings = {key: settings[key] for key in changed_keys}
                         crud_args.append(delta_settings)
-                        ok, resp = self.update_func(self.solace_config, *crud_args)
-                        if not ok:
-                            self.module.fail_json(msg=resp, **result)
-
+                        if not self.module.check_mode:
+                            ok, resp = self.update_func(self.solace_config, *crud_args)
+                            result['response'] = resp
+                            if not ok:
+                                self.module.fail_json(msg=resp, **result)
                         result['delta'] = delta_settings
-                        result['response'] = resp
                         result['changed'] = True
-                result['response'] = current_configuration[self.lookup_item()]
+                else:
+                    result['response'] = current_configuration[self.lookup_item()]
         else:
             if self.module.params['state'] == 'present':
                 if not self.module.check_mode:
@@ -243,8 +244,7 @@ def _parse_bad_response(resp):
 
 
 def _make_request(func, solace_config, path, json=None):
-    if func is requests.get and not SolaceTask.getall_omit_count:
-        path += '?count=' + str(MAX_REQUEST_ITEMS)
+    params = {'count': MAX_REQUEST_ITEMS} if (func is requests.get and not SolaceTask.getall_omit_count) else None
     try:
         return _parse_response(
             func(
@@ -252,7 +252,8 @@ def _make_request(func, solace_config, path, json=None):
                 json=json,
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
-                headers = {'x-broker-name': solace_config.x_broker}
+                headers = {'x-broker-name': solace_config.x_broker},
+                params=params
             )
         )
     except requests.exceptions.ConnectionError as e:

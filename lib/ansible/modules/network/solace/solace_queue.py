@@ -8,7 +8,7 @@ import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
 
-class SolaceSubscriptionTask(su.SolaceTask):
+class SolaceQueueTask(su.SolaceTask):
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -38,10 +38,12 @@ class SolaceSubscriptionTask(su.SolaceTask):
 
     def update_func(self, solace_config, vpn, queue, settings):
         """Update an existing Queue"""
+        queue = queue.replace('/', '%2F')
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue])
         return su.make_patch_request(solace_config, path, settings)
 
     def delete_func(self, solace_config, vpn, queue):
+        queue = queue.replace('/', '%2F')
         """Delete a Queue"""
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue])
         return su.make_delete_request(solace_config, path)
@@ -67,7 +69,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_topic_task = SolaceSubscriptionTask(module)
+    solace_topic_task = SolaceQueueTask(module)
     result = solace_topic_task.do_task()
 
     module.exit_json(**result)

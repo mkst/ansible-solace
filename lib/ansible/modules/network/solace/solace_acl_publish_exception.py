@@ -48,6 +48,7 @@ class SolaceACLPublishExceptionDeprecatedTask(su.SolaceTask):
 
     def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, publish_topic_exception):
         """Delete a Client Profile"""
+        publish_topic_exception = publish_topic_exception.replace('/', '%2F')
         uri = ','.join([topic_syntax, publish_topic_exception])
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_EXCEPTIONS,uri])
         logging.debug('delete  ' + path)

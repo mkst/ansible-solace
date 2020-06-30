@@ -45,8 +45,9 @@ class SolaceBridgeRemoteSubscriptionsTask(su.SolaceTask):
         return su.make_post_request(solace_config, path, data)
 
     def delete_func(self, solace_config, vpn, virtual_router, bridge_name, deliver_always, remote_subscription):
-        """Delete a Bridge"""
+        """Delete a Bridge remote subscription """
         bridge_uri = ','.join([bridge_name, virtual_router])
+        remote_subscription = remote_subscription.replace('/', '%2F')
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri, su.BRIDGES_REMOTE_SUBSCRIPTIONS, remote_subscription])
         return su.make_delete_request(solace_config, path, None)
 

@@ -44,6 +44,7 @@ class SolaceACLSubscribeExceptionDeprecatedTask(su.SolaceTask):
     def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, subscribe_topic_exception):
         """Delete a Client Profile"""
         resource_id = ",".join([topic_syntax,subscribe_topic_exception])
+        subscribe_topic_exception = subscribe_topic_exception.replace('/', '%2F')
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS,resource_id])
         return su.make_delete_request(solace_config, path)
 

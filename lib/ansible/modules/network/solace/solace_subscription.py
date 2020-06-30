@@ -21,6 +21,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
 
     def get_func(self, solace_config, vpn, queue):
         """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
+        queue = queue.replace('/', '%2F')
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
         return su.get_configuration(solace_config, path_array, 'subscriptionTopic')
 
@@ -31,6 +32,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
             'subscriptionTopic': topic
         }
         data = su.merge_dicts(defaults, mandatory, settings)
+        queue = queue.replace('/', '%2F')
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS])
 
         return su.make_post_request(solace_config, path, data)
@@ -38,6 +40,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
     def delete_func(self, solace_config, vpn, queue, topic):
         """Delete a Subscription"""
         # escape forwardslashes
+        queue = queue.replace('/', '%2F')
         topic = topic.replace('/', '%2F')
         path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
         return su.make_delete_request(solace_config, path)

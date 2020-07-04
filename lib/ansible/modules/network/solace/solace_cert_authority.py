@@ -4,10 +4,13 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring cert_authoritys"""
+"""Ansible-Solace Module for configuring cert_authorities"""
+
+import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
+    'metadata_version': '0.1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -61,7 +64,7 @@ options:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
     x_broker:
-        description: 
+        description:
             - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
         required: false
 
@@ -80,24 +83,23 @@ response:
     type: dict
 '''
 
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
 
 class SolaceCertAuthorityTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'certAuthorityName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
+    def get_args(self):
+        return [self.module.params['cert_content']]
+
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, cert_content):
-        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES]
-        return su.get_configuration(solace_config, path_array, 'certAuthorityName')
-
-    def get_args(self):
-        return [self.module.params['cert_content']]
+    def get_func(self, solace_config, cert_content, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, cert_content, cert_authority, settings=None):
         """Create a cert_authority"""
@@ -108,18 +110,18 @@ class SolaceCertAuthorityTask(su.SolaceTask):
             'certAuthorityName': cert_authority,
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES])
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES]
+        return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, cert_content, cert_authority, settings):
+    def update_func(self, solace_config, cert_content, lookup_item_value, settings):
         """Update an existing cert_authority"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, cert_authority])
-        return su.make_patch_request(solace_config, path, settings)
+        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, cert_content, cert_authority):
+    def delete_func(self, solace_config, cert_content, lookup_item_value):
         """Delete a cert_authority"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, cert_authority])
-        return su.make_delete_request(solace_config, path)
+        path_array = [su.SEMP_V2_CONFIG, su.CERT_AUTHORITIES, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -143,8 +145,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_cert_authority_task = SolaceCertAuthorityTask(module)
-    result = solace_cert_authority_task.do_task()
+    solace_task = SolaceCertAuthorityTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -156,3 +158,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

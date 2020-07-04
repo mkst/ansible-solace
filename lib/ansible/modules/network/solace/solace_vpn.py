@@ -5,8 +5,12 @@
 
 """Ansible-Solace Module for configuring VPNs"""
 
+import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
+
+
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
+    'metadata_version': '0.1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -60,7 +64,7 @@ options:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
     x_broker:
-        description: 
+        description:
             - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
         required: false
 
@@ -92,11 +96,10 @@ response:
     type: dict
 '''
 
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
 
 class SolaceVpnTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'msgVpnName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -104,9 +107,10 @@ class SolaceVpnTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config):
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
-        return su.get_configuration(solace_config, path_array, 'msgVpnName')
+    def get_func(self, solace_config, lookup_item_value):
+        # GET /msgVpns/{msgVpnName}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, settings=None):
         """Create a VPN"""
@@ -117,18 +121,18 @@ class SolaceVpnTask(su.SolaceTask):
             'msgVpnName': vpn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS])
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS]
+        return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, vpn, settings):
+    def update_func(self, solace_config, lookup_item_value, settings):
         """Update an existing VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
-        return su.make_patch_request(solace_config, path, settings)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, vpn):
+    def delete_func(self, solace_config, lookup_item_value):
         """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn])
-        return su.make_delete_request(solace_config, path)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -151,8 +155,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_vpn_task = SolaceVpnTask(module)
-    result = solace_vpn_task.do_task()
+    solace_task = SolaceVpnTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 

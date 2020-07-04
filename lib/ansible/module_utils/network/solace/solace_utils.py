@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke <ricardo.gomez-ulmke@solace.com>
 # MIT License
 
 """Collection of utility classes and functions to aid the solace_* modules."""
 
 import re
 import traceback
+import logging
+import json
 
 try:
     import requests
@@ -39,17 +42,37 @@ BRIDGES_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 QUEUES = 'queues'
 SUBSCRIPTIONS = 'subscriptions'
 
+""" RDP Resources """
+RDP_REST_DELIVERY_POINTS = 'restDeliveryPoints'
+RDP_REST_CONSUMERS = 'restConsumers'
+RDP_TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
+RDP_QUEUE_BINDINGS = 'queueBindings'
+
 """ DMR Resources """
 DMR_CLUSTERS = 'dmrClusters'
 LINKS = 'links'
 REMOTE_ADDRESSES = 'remoteAddresses'
-TLS_TRUSTED_COMMON_NAMES= 'tlsTrustedCommonNames'
+TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 """ cert authority resources """
 CERT_AUTHORITIES = 'certAuthorities'
 
-
-
 MAX_REQUEST_ITEMS = 1000  # 1000 seems to be hardcoded maximum
+
+################################################################################################
+# logger
+logger = logging.getLogger('ansible-solace')
+logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.NOTSET)
+
+file_log_handler = logging.FileHandler('ansible-solace.log', mode="w")  # a or w
+logger.addHandler(file_log_handler)
+
+# nice output format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s %(funcName)s(): %(message)s')
+file_log_handler.setFormatter(formatter)
+
+logger.info('Module start #############################################################################################')
+################################################################################################
 
 
 class SolaceConfig(object):
@@ -102,7 +125,7 @@ class SolaceTask:
             # jinja treats everything as a string, so cast ints and floats
             settings = _type_conversion(settings)
 
-        ok, resp = self.get_func(self.solace_config, *self.get_args())
+        ok, resp = self.get_func(self.solace_config, *(self.get_args() + [self.lookup_item()]))
 
         if not ok:
             self.module.fail_json(msg=resp, **result)
@@ -114,7 +137,7 @@ class SolaceTask:
         if self.lookup_item() in current_configuration:
             if self.module.params['state'] == 'absent':
                 if not self.module.check_mode:
-                    ok, resp = self.delete_func(self.solace_config, *crud_args)
+                    ok, resp = self.delete_func(self.solace_config, *(self.get_args() + [self.lookup_item()]))
                     if not ok:
                         self.module.fail_json(msg=resp, **result)
                 result['changed'] = True
@@ -137,9 +160,13 @@ class SolaceTask:
                     changed_keys = changed_keys + removed_keys
                     # add any whitelisted items
                     if len(changed_keys):
+                        # TODO: deleteme
+                        # compose again for PATCH with url encoded lookup_item
+                        # crud_args = self.get_args() + [self.lookup_item().replace('/', '%2F')]
                         delta_settings = {key: settings[key] for key in changed_keys}
                         crud_args.append(delta_settings)
                         if not self.module.check_mode:
+                            # logger.debug("update_func.crud_args=\n%s", json.dumps(crud_args, indent=2))
                             ok, resp = self.update_func(self.solace_config, *crud_args)
                             result['response'] = resp
                             if not ok:
@@ -194,9 +221,13 @@ def merge_dicts(*argv):
 
 
 def _build_config_dict(resp, key):
+    # resp is a single dict, not an array
+    # return an array with 1 element
+    # logger.debug("_build_config_dict.key=%s", json.dumps(key, indent=2))
+    # logger.debug("_build_config_dict.resp=\n%s", json.dumps(resp, indent=2))
     d = dict()
-    for k in resp:
-        d[k[key]] = k
+    d[resp[key]] = resp
+    # logger.debug("_build_config_dict.d=\n%s", json.dumps(d, indent=2))
     return d
 
 
@@ -212,23 +243,46 @@ def _type_conversion(d):
     return d
 
 
+# def get_self_configuration(solace_task, path_array, key):
+#     # <ansible.module_utils.basic.AnsibleModule object at 0x106ec3610>
+#     logger.debug("solace_task.module=%s", solace_task.module)
+#     logger.debug("solace_task.solace_config.vmr_url=%s", solace_task.solace_config.vmr_url)
+#     logger.debug("type(path_array)=%s", type(path_array))
+#
+#     if not type(path_array) is list:
+#         raise TypeError("argument 'path_array' is not an array but {}".format(type(path_array)))
+#
+#     raise Exception('\n\ncontinue here ...\n\n')
+
+
+# response contains 1 dict if lookup_item/key is found
+# if lookup_item is not found, response http-code: 400 with extra info in meta.error
 def get_configuration(solace_config, path_array, key):
-    path = '/'.join(path_array)
-    ok, resp = make_get_request(solace_config, path)
+    ok, resp = make_get_request(solace_config, path_array)
+    logger.debug("resp=\n%s", json.dumps(resp, indent=2))
     if ok:
         return True, _build_config_dict(resp, key)
+    else:
+        # check if responseCode=400 and error.code=6 ==> not found
+        if type(resp) is dict and \
+                resp['responseCode'] == 400 and \
+                'error' in resp.keys() and \
+                'code' in resp['error'].keys() and \
+                resp['error']['code'] == 6:
+            return True, dict()
     return False, resp
 
 
 # request/response handling
 def _parse_response(resp):
-    if resp.status_code is not 200:
+    if resp.status_code != 200:
         return False, _parse_bad_response(resp)
     return True, _parse_good_response(resp)
 
 
 def _parse_good_response(resp):
     j = resp.json()
+    logger.debug("response=\n%s", json.dumps(j, indent=2))
     if 'data' in j.keys():
         return j['data']
     return dict()
@@ -236,14 +290,34 @@ def _parse_good_response(resp):
 
 def _parse_bad_response(resp):
     j = resp.json()
+    logger.debug("response=\n%s", json.dumps(j, indent=2))
     if 'meta' in j.keys() and \
             'error' in j['meta'].keys() and \
             'description' in j['meta']['error'].keys():
-        return j['meta']['error']['description']
+        # return j['meta']['error']['description']
+        # we want to see the full message, including the code & request
+        return j['meta']
     return 'Unknown error'
 
 
-def _make_request(func, solace_config, path, json=None):
+def _make_request(func, solace_config, path_array, json=None):
+    if not type(path_array) is list:
+        raise TypeError("argument 'path_array' is not an array but {}".format(type(path_array)))
+    # ensure elements are 'url encoded'
+    # except first one: /SEMP/v2/config
+    paths = []
+    for i, path_elem in enumerate(path_array):
+        if i > 0:
+            # logger.debug("get_configuration: path_array[%i]=%s", i, path_elem)
+            paths.append(path_elem.replace('/', '%2F'))
+        else:
+            paths.append(path_elem)
+    # logger.debug("get_configuration: paths=\n%s", json.dumps(paths, indent=2))
+    path = '/'.join(paths)
+    logger.debug("path=%s", path)
+
+    # raise Exception('\n\ncontinue here ...\n\n')
+
     params = {'count': MAX_REQUEST_ITEMS} if (func is requests.get and not SolaceTask.getall_omit_count) else None
     try:
         return _parse_response(
@@ -252,7 +326,7 @@ def _make_request(func, solace_config, path, json=None):
                 json=json,
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
-                headers = {'x-broker-name': solace_config.x_broker},
+                headers={'x-broker-name': solace_config.x_broker},
                 params=params
             )
         )
@@ -260,17 +334,20 @@ def _make_request(func, solace_config, path, json=None):
         return False, str(e)
 
 
-def make_get_request(solace_config, path):
-    return _make_request(requests.get, solace_config, path)
+def make_get_request(solace_config, path_array):
+    return _make_request(requests.get, solace_config, path_array)
 
 
-def make_post_request(solace_config, path, json=None):
-    return _make_request(requests.post, solace_config, path, json)
+def make_post_request(solace_config, path_array, json=None):
+    return _make_request(requests.post, solace_config, path_array, json)
 
 
-def make_delete_request(solace_config, path, json=None):
-    return _make_request(requests.delete, solace_config, path, json)
+def make_delete_request(solace_config, path_array, json=None):
+    return _make_request(requests.delete, solace_config, path_array, json)
 
 
-def make_patch_request(solace_config, path, json=None):
-    return _make_request(requests.patch, solace_config, path, json)
+def make_patch_request(solace_config, path_array, json=None):
+    return _make_request(requests.patch, solace_config, path_array, json)
+
+###
+# The End.

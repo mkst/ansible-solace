@@ -1,5 +1,5 @@
 # ansible-solace
-Ansible module(s) to configure Solace via [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm)
+Ansible module(s) to configure Solace Brokers via [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm).
 
 # QUICKSTART
 
@@ -47,7 +47,7 @@ Status of the `solace_*` modules:
 | [solace_acl_profile](lib/ansible/modules/network/solace/solace_acl_profile.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_connect](lib/ansible/modules/network/solace/solace_acl_connect.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_publish](lib/ansible/modules/network/solace/solace_acl_publish.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
-| [solace_acl_connect](lib/ansible/modules/network/solace/solace_acl_connect.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
+| [solace_acl_subscribe](lib/ansible/modules/network/solace/solace_acl_subscribe.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.yml) |
 | [solace_acl_publish_exception](lib/ansible/modules/network/solace/solace_acl_publish_exception.py) (deprecated) | aclProfile | Action | :sunny: |  |
 | [solace_acl_subscribe_exception](lib/ansible/modules/network/solace/solace_acl_subscribe_exception.py) (deprecated) | aclProfile | Action | :sunny: |  |
 | solace_authorization_group | authorizationGroup | Action | | |
@@ -59,12 +59,15 @@ Status of the `solace_*` modules:
 | [solace_client_profile](lib/ansible/modules/network/solace/solace_client_profile.py) | clientProfile | Action | :sunny: | |
 | solace_jndi | jndi | Action | | |
 | solace_mqtt_session | mqttSession | Action | | |
-| [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queue.yml) |
+| [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queue.yml) [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
+| [solace_subscription](lib/ansible/modules/network/solace/solace_subscription.py) | queue/{..}/subscriptions | Action | :sunny: | [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
+| [solace_topic](lib/ansible/modules/network/solace/solace_topic.py) | topicEndpoint | Action | :sunny: | |
 | solace_replay_log | replayLog | Action | | |
 | solace_replicated_topic | replicatedTopic | Action | | |
-| solace_rest_delivery_point | restDeliveryPoint | Action | | |
-| [solace_subscription](lib/ansible/modules/network/solace/solace_subscription.py) | queue/{..}/subscriptions | Action | :sunny: | |
-| [solace_topic](lib/ansible/modules/network/solace/solace_topic.py) | topicEndpoint | Action | :sunny: | |
+| [solace_rdp](lib/ansible/modules/network/solace/solace_rdp.py) | restDeliveryPoint | Action | :sunny: | [:page_facing_up:](examples/solace_rdp.yml) |
+| [solace_rdp_rest_consumer](lib/ansible/modules/network/solace/solace_rdp_rest_consumer.py) | restDeliveryPoint | Action | :sunny: | [:page_facing_up:](examples/solace_rdp.yml) |
+| [solace_rdp_rest_consumer_trusted_common_name](lib/ansible/modules/network/solace/solace_rdp_rest_consumer_trusted_common_name.py) | restDeliveryPoint | Action | :sunny: |[:page_facing_up:](examples/solace_rdp.yml) |
+| [solace_rdp_queue_binding](lib/ansible/modules/network/solace/solace_rdp_queue_binding.py) | restDeliveryPoint | Action | :sunny: | [:page_facing_up:](examples/solace_rdp.yml)|
 | [solace_vpn](lib/ansible/modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: | [:page_facing_up:](examples/solace_vpn.yml) |
 | [solace_cert_authority](lib/ansible/modules/network/solace/solace_cert_authority.py) | certAuthority | Action | :sunny: | [:page_facing_up:](examples/solace_cert_authority.yml) |
 | [solace_dmr_bridge](lib/ansible/modules/network/solace/solace_dmr_bridge.py) | dmrBridge | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.yml) |
@@ -73,4 +76,14 @@ Status of the `solace_*` modules:
 | [solace_link_remote_address](lib/ansible/modules/network/solace/solace_link_remote_address.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.yml) |
 | [solace_link_trusted_cn](lib/ansible/modules/network/solace/solace_link_trusted_cn.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.yml) |
 
+# Writing New Modules
 
+[See Guide to Creating new Modules.](./GuideCreateModule.md)
+
+# Open Issues
+
+Open items to potentially enhance the framework.
+[See Open Issues.](./OpenIssues.md)
+
+---
+The End.

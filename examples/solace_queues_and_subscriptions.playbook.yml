@@ -1,0 +1,37 @@
+-
+  name: Setup AZ RDP Function Queues
+
+  hosts: all
+
+  tasks:
+
+    - include_vars:
+        file: "{{ deploymentFile }}"
+        name: deployment
+
+    - name: Adding / updating queues
+      include_tasks: ./tasks/queues.tasks.yml
+      register: result
+      loop: "{{ deployment.azRDPFunction.brokerConfig.queues }}"
+      when: result.rc|default(0)==0
+      # loop_control:
+      #   index_var: queueNumber
+
+    - name: Create subscription on queues
+      solace_subscription:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        queue: "{{ item.name }}"
+        topic: "{{ item.subscription }}"
+        state: present
+      register: result
+      loop: "{{ deployment.azRDPFunction.brokerConfig.queues }}"
+      when: result.rc|default(0)==0
+
+###
+# The End.

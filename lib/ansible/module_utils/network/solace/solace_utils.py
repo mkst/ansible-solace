@@ -73,22 +73,6 @@ if ENABLE_LOGGING:
     init_logging()
 
 
-
-# logger = logging.getLogger('ansible-solace')
-# logger.setLevel(logging.DEBUG)
-# # logger.setLevel(logging.NOTSET)
-#
-# file_log_handler = logging.FileHandler('ansible-solace.log', mode="w")  # a or w
-# logger.addHandler(file_log_handler)
-#
-# # nice output format
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s %(funcName)s(): %(message)s')
-# file_log_handler.setFormatter(formatter)
-#
-# logger.info('Module start #############################################################################################')
-################################################################################################
-
-
 class SolaceConfig(object):
     """Solace Configuration object"""
 

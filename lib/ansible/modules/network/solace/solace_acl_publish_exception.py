@@ -8,13 +8,15 @@ import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
 import logging
-logging.basicConfig(filename='solace.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(funcName)s -%(message)s' )
+logging.basicConfig(filename='solace.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(funcName)s -%(message)s')
+
 
 ANSIBLE_METADATA = {
     'metadata_version': '0.1.0',
     'status': ['preview'],
     'supported_by': 'community'
 }
+
 
 class SolaceACLPublishExceptionDeprecatedTask(su.SolaceTask):
 

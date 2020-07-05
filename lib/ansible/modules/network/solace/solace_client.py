@@ -17,16 +17,16 @@ ANSIBLE_METADATA = {
 
 class SolaceClientTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'clientUsername'
-
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def lookup_item(self):
-        return self.module.params['name']
-
     def get_args(self):
         return [self.module.params['msg_vpn']]
+
+    LOOKUP_ITEM_KEY = 'clientUsername'
+
+    def lookup_item(self):
+        return self.module.params['name']
 
     def get_func(self, solace_config, vpn, lookup_item_value):
         """Pull configuration for all Clients associated with a given VPN"""

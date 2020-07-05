@@ -15,7 +15,7 @@ try:
     import requests
 
     HAS_REQUESTS = True
-except ImportError as error:
+except ImportError:
     REQUESTS_IMP_ERR = traceback.format_exc()
     HAS_REQUESTS = False
 
@@ -56,22 +56,36 @@ TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 """ cert authority resources """
 CERT_AUTHORITIES = 'certAuthorities'
 
-MAX_REQUEST_ITEMS = 1000  # 1000 seems to be hardcoded maximum
-
 ################################################################################################
-# logger
-logger = logging.getLogger('ansible-solace')
-logger.setLevel(logging.DEBUG)
-# logger.setLevel(logging.NOTSET)
+# logging
+ENABLE_LOGGING = False  # False to disable
 
-file_log_handler = logging.FileHandler('ansible-solace.log', mode="w")  # a or w
-logger.addHandler(file_log_handler)
 
-# nice output format
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s %(funcName)s(): %(message)s')
-file_log_handler.setFormatter(formatter)
+def init_logging():
+    logging.basicConfig(filename='ansible_solace.log',
+                        level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s(): %(message)s')
+    logging.info('Module start #############################################################################################')
+    return
 
-logger.info('Module start #############################################################################################')
+
+if ENABLE_LOGGING:
+    init_logging()
+
+
+
+# logger = logging.getLogger('ansible-solace')
+# logger.setLevel(logging.DEBUG)
+# # logger.setLevel(logging.NOTSET)
+#
+# file_log_handler = logging.FileHandler('ansible-solace.log', mode="w")  # a or w
+# logger.addHandler(file_log_handler)
+#
+# # nice output format
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s %(funcName)s(): %(message)s')
+# file_log_handler.setFormatter(formatter)
+#
+# logger.info('Module start #############################################################################################')
 ################################################################################################
 
 
@@ -93,7 +107,6 @@ class SolaceConfig(object):
 
 
 class SolaceTask:
-    getall_omit_count = True
 
     def __init__(self, module):
         self.module = module
@@ -160,9 +173,6 @@ class SolaceTask:
                     changed_keys = changed_keys + removed_keys
                     # add any whitelisted items
                     if len(changed_keys):
-                        # TODO: deleteme
-                        # compose again for PATCH with url encoded lookup_item
-                        # crud_args = self.get_args() + [self.lookup_item().replace('/', '%2F')]
                         delta_settings = {key: settings[key] for key in changed_keys}
                         crud_args.append(delta_settings)
                         if not self.module.check_mode:
@@ -221,6 +231,8 @@ def merge_dicts(*argv):
 
 
 def _build_config_dict(resp, key):
+    if not type(resp) is dict:
+        raise TypeError("argument 'resp' is not a 'dict' but {}. Hint: check you are using Sempv2 GET single item call and not a list of items.".format(type(resp)))
     # resp is a single dict, not an array
     # return an array with 1 element
     # logger.debug("_build_config_dict.key=%s", json.dumps(key, indent=2))
@@ -243,23 +255,11 @@ def _type_conversion(d):
     return d
 
 
-# def get_self_configuration(solace_task, path_array, key):
-#     # <ansible.module_utils.basic.AnsibleModule object at 0x106ec3610>
-#     logger.debug("solace_task.module=%s", solace_task.module)
-#     logger.debug("solace_task.solace_config.vmr_url=%s", solace_task.solace_config.vmr_url)
-#     logger.debug("type(path_array)=%s", type(path_array))
-#
-#     if not type(path_array) is list:
-#         raise TypeError("argument 'path_array' is not an array but {}".format(type(path_array)))
-#
-#     raise Exception('\n\ncontinue here ...\n\n')
-
-
 # response contains 1 dict if lookup_item/key is found
 # if lookup_item is not found, response http-code: 400 with extra info in meta.error
 def get_configuration(solace_config, path_array, key):
     ok, resp = make_get_request(solace_config, path_array)
-    logger.debug("resp=\n%s", json.dumps(resp, indent=2))
+    # logger.debug("resp=\n%s", json.dumps(resp, indent=2))
     if ok:
         return True, _build_config_dict(resp, key)
     else:
@@ -282,7 +282,7 @@ def _parse_response(resp):
 
 def _parse_good_response(resp):
     j = resp.json()
-    logger.debug("response=\n%s", json.dumps(j, indent=2))
+    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'data' in j.keys():
         return j['data']
     return dict()
@@ -290,7 +290,7 @@ def _parse_good_response(resp):
 
 def _parse_bad_response(resp):
     j = resp.json()
-    logger.debug("response=\n%s", json.dumps(j, indent=2))
+    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'meta' in j.keys() and \
             'error' in j['meta'].keys() and \
             'description' in j['meta']['error'].keys():
@@ -314,11 +314,8 @@ def _make_request(func, solace_config, path_array, json=None):
             paths.append(path_elem)
     # logger.debug("get_configuration: paths=\n%s", json.dumps(paths, indent=2))
     path = '/'.join(paths)
-    logger.debug("path=%s", path)
+    logging.debug("%s uri=%s", func, path)
 
-    # raise Exception('\n\ncontinue here ...\n\n')
-
-    params = {'count': MAX_REQUEST_ITEMS} if (func is requests.get and not SolaceTask.getall_omit_count) else None
     try:
         return _parse_response(
             func(
@@ -327,7 +324,7 @@ def _make_request(func, solace_config, path_array, json=None):
                 auth=solace_config.vmr_auth,
                 timeout=solace_config.vmr_timeout,
                 headers={'x-broker-name': solace_config.x_broker},
-                params=params
+                params=None
             )
         )
     except requests.exceptions.ConnectionError as e:

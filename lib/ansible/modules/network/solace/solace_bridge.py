@@ -30,7 +30,8 @@ class SolaceBridgeTask(su.SolaceTask):
 
     def get_func(self, solace_config, vpn, virtual_router, lookup_item_value):
         # GET /msgVpns/{msgVpnName}/bridges/{bridgeName},{bridgeVirtualRouter}
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, lookup_item_value]
+        bridge_uri = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, virtual_router, bridge_name, settings=None):

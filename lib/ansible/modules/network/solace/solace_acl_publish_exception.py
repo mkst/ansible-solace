@@ -36,24 +36,20 @@ class SolaceACLPublishExceptionDeprecatedTask(su.SolaceTask):
     def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
         ex_uri = ','.join([topic_syntax, lookup_item_value])
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_EXCEPTIONS, ex_uri]
-        logging.debug('path array ' + "/".join(path_array))
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, acl_profile_name, topic_syntax, publish_topic_exception, settings=None):
-        """Create a Client Profile"""
         defaults = {
             'msgVpnName': vpn,
             'aclProfileName': acl_profile_name,
             'topicSyntax': topic_syntax
-
         }
         mandatory = {
             'publishExceptionTopic': publish_topic_exception
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_EXCEPTIONS])
-
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_EXCEPTIONS]
+        return su.make_post_request(solace_config, path_array, data)
 
     def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
         ex_uri = ','.join([topic_syntax, lookup_item_value])

@@ -160,7 +160,6 @@ class SolaceTask:
                         delta_settings = {key: settings[key] for key in changed_keys}
                         crud_args.append(delta_settings)
                         if not self.module.check_mode:
-                            # logger.debug("update_func.crud_args=\n%s", json.dumps(crud_args, indent=2))
                             ok, resp = self.update_func(self.solace_config, *crud_args)
                             result['response'] = resp
                             if not ok:
@@ -219,11 +218,8 @@ def _build_config_dict(resp, key):
         raise TypeError("argument 'resp' is not a 'dict' but {}. Hint: check you are using Sempv2 GET single item call and not a list of items.".format(type(resp)))
     # resp is a single dict, not an array
     # return an array with 1 element
-    # logger.debug("_build_config_dict.key=%s", json.dumps(key, indent=2))
-    # logger.debug("_build_config_dict.resp=\n%s", json.dumps(resp, indent=2))
     d = dict()
     d[resp[key]] = resp
-    # logger.debug("_build_config_dict.d=\n%s", json.dumps(d, indent=2))
     return d
 
 
@@ -243,16 +239,15 @@ def _type_conversion(d):
 # if lookup_item is not found, response http-code: 400 with extra info in meta.error
 def get_configuration(solace_config, path_array, key):
     ok, resp = make_get_request(solace_config, path_array)
-    # logger.debug("resp=\n%s", json.dumps(resp, indent=2))
     if ok:
         return True, _build_config_dict(resp, key)
     else:
         # check if responseCode=400 and error.code=6 ==> not found
-        if type(resp) is dict and \
-                resp['responseCode'] == 400 and \
-                'error' in resp.keys() and \
-                'code' in resp['error'].keys() and \
-                resp['error']['code'] == 6:
+        if (type(resp) is dict
+                and resp['responseCode'] == 400
+                and 'error' in resp.keys()
+                and 'code' in resp['error'].keys()
+                and resp['error']['code'] == 6):
             return True, dict()
     return False, resp
 
@@ -292,11 +287,9 @@ def _make_request(func, solace_config, path_array, json=None):
     paths = []
     for i, path_elem in enumerate(path_array):
         if i > 0:
-            # logger.debug("get_configuration: path_array[%i]=%s", i, path_elem)
             paths.append(path_elem.replace('/', '%2F'))
         else:
             paths.append(path_elem)
-    # logger.debug("get_configuration: paths=\n%s", json.dumps(paths, indent=2))
     path = '/'.join(paths)
     logging.debug("%s uri=%s", func, path)
 

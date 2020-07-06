@@ -1,0 +1,74 @@
+# Tasks to add/update a queue
+# include & use to loop over tasks
+---
+    # - debug:
+    #     msg:
+    #       - "Adding queue:"
+    #       - "queue number: {{ queueNumber }}"
+    #       - "config: {{ item }}"
+
+    - name: Disable Egress of Queue
+      # required to update the owner
+      solace_queue:
+        # general params
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        # module specific params
+        name: "{{ item.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          egressEnabled: false
+        state: present
+
+      register: itemResult
+
+    - name: Adding / updating queue
+      solace_queue:
+        # general params
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        # module specific params
+        name: "{{ item.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          egressEnabled: true
+          ingressEnabled: true
+          permission: "consume"
+          respectTtlEnabled: "{{ item.settings.messageExpiry.respectTTL | default(false) }}"
+          maxTtl: "{{ item.settings.messageExpiry.maxTTLSecs | default(0) }}"
+          owner: "{{ item.owner }}"
+        state: present
+
+      register: itemResult
+
+    - debug:
+        msg: "solace_queue.result={{ itemResult }}"
+
+    - name: Enable Egress of Queue
+      solace_queue:
+        # general params
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        # module specific params
+        name: "{{ item.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          egressEnabled: true
+        state: present
+
+      register: itemResult
+
+###
+# The End.

@@ -4,17 +4,18 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring VPNs"""
+import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
+    'metadata_version': '0.1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
 
 DOCUMENTATION = '''
 ---
-module: solace_dmr
+module: solace_link_trusted_cn
 
 short_description: Configure DMR Cluster on Solace Appliances
 
@@ -28,7 +29,7 @@ options:
         description:
             - This is the trusted tls common name of the DMR link being configured
         required: true
-    remote_node_name: 
+    remote_node_name:
             - Remote node name, identifier of the DMR link
         required: true
     dmr:
@@ -67,7 +68,7 @@ options:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
     x_broker:
-        description: 
+        description:
             - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
         required: false
 
@@ -86,11 +87,10 @@ response:
     type: dict
 '''
 
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
 
 class SolaceLinkTrustedCNTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'tlsTrustedCommonName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -98,12 +98,12 @@ class SolaceLinkTrustedCNTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, dmr, link):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
-        return su.get_configuration(solace_config, path_array, 'tlsTrustedCommonName')
-
     def get_args(self):
-        return [self.module.params['dmr'],self.module.params['remote_node_name']]
+        return [self.module.params['dmr'], self.module.params['remote_node_name']]
+
+    def get_func(self, solace_config, dmr, link, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, dmr, link, trusted_cn, settings=None):
         """Create a DMR Cluster"""
@@ -115,13 +115,13 @@ class SolaceLinkTrustedCNTask(su.SolaceTask):
             'tlsTrustedCommonName': trusted_cn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES])
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
+        return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, dmr, link, trusted_cn ):
+    def delete_func(self, solace_config, dmr, link, lookup_item_value):
         """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, trusted_cn])
-        return su.make_delete_request(solace_config, path)
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -146,8 +146,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_link_trusted_cn_task = SolaceLinkTrustedCNTask(module)
-    result = solace_link_trusted_cn_task.do_task()
+    solace_task = SolaceLinkTrustedCNTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -159,3 +159,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

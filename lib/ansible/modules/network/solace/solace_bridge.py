@@ -8,25 +8,34 @@
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
+ANSIBLE_METADATA = {
+    'metadata_version': '0.1.1',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 
 class SolaceBridgeTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'bridgeName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
+    def get_args(self):
+        return [self.module.params['msg_vpn'], self.module.params['virtual_router']]
+
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_args(self):
-        return [self.module.params['msg_vpn'],self.module.params['virtual_router']]
-
-    def get_func(self, solace_config, vpn, virtual_router):
-        """Pull configuration for all Bridges associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES]
-        return su.get_configuration(solace_config, path_array, 'bridgeName')
+    def get_func(self, solace_config, vpn, virtual_router, lookup_item_value):
+        # GET /msgVpns/{msgVpnName}/bridges/{bridgeName},{bridgeVirtualRouter}
+        bridge_uri = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, virtual_router, bridge_name, settings=None):
-        """Create a Bridge"""
+        # POST /msgVpns/{msgVpnName}/bridges
         defaults = {
             'msgVpnName': vpn,
             'bridgeVirtualRouter': virtual_router
@@ -35,28 +44,27 @@ class SolaceBridgeTask(su.SolaceTask):
             'bridgeName': bridge_name
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES]
+        return su.make_post_request(solace_config, path_array, data)
 
-        return su.make_post_request(solace_config, path, data)
+    def update_func(self, solace_config, vpn, virtual_router, lookup_item_value, settings=None):
+        # PATCH /msgVpns/{msgVpnName}/bridges/{bridgeName},{bridgeVirtualRouter}
+        bridge_uri = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def update_func(self, solace_config, vpn, virtual_router, bridge_name, settings=None):
-        """Update an existing Bridge"""
-        bridge_uri = ','.join([bridge_name, virtual_router])
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri])
-        return su.make_patch_request(solace_config, path, settings)
-
-    def delete_func(self, solace_config, vpn, virtual_router, bridge_name):
-        """Delete a Bridge"""
-        bridge_uri = ','.join([bridge_name, virtual_router])
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri])
-        return su.make_delete_request(solace_config, path, None)
+    def delete_func(self, solace_config, vpn, virtual_router, lookup_item_value):
+        # DELETE /msgVpns/{msgVpnName}/bridges/{bridgeName},{bridgeVirtualRouter}
+        bridge_uri = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri]
+        return su.make_delete_request(solace_config, path_array, None)
 
 
 def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
-        virtual_router= dict(type='str', required=True),
+        virtual_router=dict(type='str', required=True),
         msg_vpn=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
@@ -73,8 +81,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_bridge_task = SolaceBridgeTask(module)
-    result = solace_bridge_task.do_task()
+    solace_task = SolaceBridgeTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -86,3 +94,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

@@ -4,17 +4,18 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring VPNs"""
+import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
+    'metadata_version': '0.1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
 
 DOCUMENTATION = '''
 ---
-module: solace_dmr
+module: solace_link_remote_address
 
 short_description: Configure DMR Cluster on Solace Appliances
 
@@ -28,7 +29,7 @@ options:
         description:
             - This is the dmrClusterName of the DMR Cluster being configured
         required: true
-    remote_node_name: 
+    remote_node_name:
             - Remote node name, identifier of the DMR link
         required: true
     dmr:
@@ -67,8 +68,8 @@ options:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
     x_broker:
-        description: 
-            - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
+        description:
+            - Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure
         required: false
 
 author:
@@ -86,27 +87,27 @@ response:
     type: dict
 '''
 
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
 
 class SolaceLinkRemoteAddressTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'remoteAddress'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
+    def get_args(self):
+        return [self.module.params['dmr'], self.module.params['remote_node_name']]
+
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, dmr, link):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES]
-        return su.get_configuration(solace_config, path_array, 'remoteAddress')
-
-    def get_args(self):
-        return [self.module.params['dmr'],self.module.params['remote_node_name']]
+    def get_func(self, solace_config, dmr, link, lookup_item_value):
+        # GET /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, dmr, link, address, settings=None):
-        """Create a DMR Cluster"""
+        # POST /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses
         defaults = {
             'dmrClusterName': dmr,
             'remoteNodeName': link
@@ -115,13 +116,13 @@ class SolaceLinkRemoteAddressTask(su.SolaceTask):
             'remoteAddress': address
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES])
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES]
+        return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, dmr, link, address ):
-        """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, address])
-        return su.make_delete_request(solace_config, path)
+    def delete_func(self, solace_config, dmr, link, lookup_item_value):
+        # DELETE /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -147,8 +148,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_link_remote_address_task = SolaceLinkRemoteAddressTask(module)
-    result = solace_link_remote_address_task.do_task()
+    solace_task = SolaceLinkRemoteAddressTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -160,3 +161,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

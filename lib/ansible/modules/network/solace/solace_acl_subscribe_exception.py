@@ -4,9 +4,14 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring Client Profiles"""
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
+
+ANSIBLE_METADATA = {
+    'metadata_version': '0.1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
 
 
 class SolaceACLSubscribeExceptionDeprecatedTask(su.SolaceTask):
@@ -14,39 +19,38 @@ class SolaceACLSubscribeExceptionDeprecatedTask(su.SolaceTask):
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
+    def get_args(self):
+        return [self.module.params['msg_vpn'], self.module.params['acl_profile_name'], self.module.params['topic_syntax']]
+
+    LOOKUP_ITEM_KEY = 'subscribeExceptionTopic'
+
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_args(self):
-        return [self.module.params['msg_vpn'],self.module.params['acl_profile_name'],self.module.params['topic_syntax']]
-
-    def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax):
-        """Pull configuration for all Client Profiles associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS]
-        return su.get_configuration(solace_config, path_array, 'subscribeExceptionTopic')
+    def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
+        # GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
+        ex_uri = ','.join([topic_syntax, lookup_item_value])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS, ex_uri]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, acl_profile_name, topic_syntax, subscribe_topic_exception, settings=None):
-        """Create a Client Profile"""
         defaults = {
             'msgVpnName': vpn,
             'aclProfileName': acl_profile_name,
             'topicSyntax': topic_syntax
-            
         }
         mandatory = {
             'subscribeExceptionTopic': subscribe_topic_exception
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS]
+        return su.make_post_request(solace_config, path_array, data)
 
-        return su.make_post_request(solace_config, path, data)
-
-    def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, subscribe_topic_exception):
-        """Delete a Client Profile"""
-        resource_id = ",".join([topic_syntax,subscribe_topic_exception])
-        subscribe_topic_exception = subscribe_topic_exception.replace('/', '%2F')
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS,resource_id])
-        return su.make_delete_request(solace_config, path)
+    def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
+        # DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
+        ex_uri = ",".join([topic_syntax, lookup_item_value])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_SUBSCRIBE_EXCEPTIONS, ex_uri]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -71,8 +75,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_acl_subscribe_task = SolaceACLSubscribeExceptionDeprecatedTask(module)
-    result = solace_acl_subscribe_task.do_task()
+    solace_task = SolaceACLSubscribeExceptionDeprecatedTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -84,3 +88,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+###
+# The End.

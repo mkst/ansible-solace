@@ -4,10 +4,11 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring VPNs"""
+import ansible.module_utils.network.solace.solace_utils as su
+from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
+    'metadata_version': '0.1.1',
     'status': ['preview'],
     'supported_by': 'community'
 }
@@ -61,7 +62,7 @@ options:
             - Connection timeout when making requests, defaults to 1 (second)
         required: false
     x_broker:
-        description: 
+        description:
             - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
         required: false
 
@@ -94,11 +95,10 @@ response:
     type: dict
 '''
 
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
 
 class SolaceDMRClusterTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'dmrClusterName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -106,9 +106,13 @@ class SolaceDMRClusterTask(su.SolaceTask):
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS]
-        return su.get_configuration(solace_config, path_array, 'dmrClusterName')
+    def get_args(self):
+        return []
+
+    def get_func(self, solace_config, lookup_item_value):
+        # GET /dmrClusters/{dmrClusterName}
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, dmr, settings=None):
         """Create a DMR Cluster"""
@@ -120,18 +124,16 @@ class SolaceDMRClusterTask(su.SolaceTask):
             'dmrClusterName': dmr
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS])
-        return su.make_post_request(solace_config, path, data)
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS]
+        return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, dmr, settings):
-        """Update an existing VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr])
-        return su.make_patch_request(solace_config, path, settings)
+    def update_func(self, solace_config, lookup_item_value, settings):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, dmr ):
-        """Delete a VPN"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr])
-        return su.make_delete_request(solace_config, path)
+    def delete_func(self, solace_config, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -155,8 +157,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_dmr_task = SolaceDMRClusterTask(module)
-    result = solace_dmr_task.do_task()
+    solace_task = SolaceDMRClusterTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -168,3 +170,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

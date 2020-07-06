@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke <ricardo.gomez-ulmke@solace.com>
 # MIT License
 
-"""Ansible-Solace Module for configuring Topics"""
+"""Ansible-Solace Module for configuring RDPs"""
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
@@ -15,13 +16,13 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: solace_topic
+module: solace_rdp
 
-short_description: todo
+short_description: Configure a rest delivery point (rdp) on a message vpn.
 
 description:
-    - "todo"
-    - "Reference documentation: todo"
+    - "Allows addition, removal and configuration of Rest Delivery Points on Solace Brokers in an idempotent manner. "
+    - "Reference documentation: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/restDeliveryPoint."
 
 options:
     name:
@@ -76,7 +77,43 @@ author:
 '''
 
 EXAMPLES = '''
-todo
+# Create an RDP
+    - name: Create RDP
+      solace_rdp:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          clientProfileName: "{{ deployment.azRDPFunction.brokerConfig.clientProfileName | default('default') }}"
+          enabled: false
+        state: present
+
+      register: result
+
+    - debug:
+        msg: "(solace_restDeliveryPoint): result={{ result }}"
+
+# Delete an RDP
+    - name: Delete RDP
+      solace_rdp:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        state: absent
+
+      register: result
+    - debug:
+        msg: "(solace_restDeliveryPoint): result={{ result }}"
 '''
 
 RETURN = '''
@@ -86,9 +123,9 @@ response:
 '''
 
 
-class SolaceTopicTask(su.SolaceTask):
+class SolaceRdpTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'topicEndpointName'
+    LOOKUP_ITEM_KEY = 'restDeliveryPointName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -100,29 +137,30 @@ class SolaceTopicTask(su.SolaceTask):
         return [self.module.params['msg_vpn']]
 
     def get_func(self, solace_config, vpn, lookup_item_value):
-        """Pull configuration for all Topic/Endpoints associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
+        """Pull configuration for all RDPs associated with a given VPN"""
+        # GET /msgVpns/{msgVpnName}/restDeliveryPoints/{restDeliveryPointName}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, vpn, topic, settings=None):
-        """Create a Topic/Endpoint"""
+    def create_func(self, solace_config, vpn, name, settings=None):
+        """Create a RDP"""
         defaults = {}
         mandatory = {
             'msgVpnName': vpn,
-            'topicEndpointName': topic
+            'restDeliveryPointName': name
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS]
         return su.make_post_request(solace_config, path_array, data)
 
     def update_func(self, solace_config, vpn, lookup_item_value, settings):
-        """Update an existing Topic/Endpoint"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
+        """Update an existing RDP"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, lookup_item_value]
         return su.make_patch_request(solace_config, path_array, settings)
 
     def delete_func(self, solace_config, vpn, lookup_item_value):
-        """Delete a Topic/Endpoint"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
+        """Delete a RDP"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -138,7 +176,7 @@ def run_module():
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
         state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
+        timeout=dict(default='30', require=False),
         x_broker=dict(type='str', default='')
     )
     module = AnsibleModule(
@@ -146,7 +184,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_task = SolaceTopicTask(module)
+    solace_task = SolaceRdpTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

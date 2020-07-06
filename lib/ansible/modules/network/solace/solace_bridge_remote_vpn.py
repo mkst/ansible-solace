@@ -32,7 +32,7 @@ class SolaceBridgeRemoteVpnTask(su.SolaceTask):
         # GET /msgVpns/{msgVpnName}/bridges/{bridgeName},{bridgeVirtualRouter}/remoteMsgVpns/{remoteMsgVpnName},{remoteMsgVpnLocation},{remoteMsgVpnInterface}
         # here: omitting {remoteMsgVpnInterface}
         bridge_uri = ','.join([bridge_name, virtual_router])
-        remote_vpn_uri = ','.join([lookup_item_value, remote_vpn_location])
+        remote_vpn_uri = ','.join([lookup_item_value, remote_vpn_location]) + ','
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.BRIDGES, bridge_uri, su.BRIDGES_REMOTE_MSG_VPNS, remote_vpn_uri]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 

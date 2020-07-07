@@ -1,13 +1,5 @@
 # Open Issues
 
-## Create Install Package
-
-  - http://packaging.python.org/tutorials/packaging-projects/
-
-## Guide to Create new Sempv2 Modules
-
-Write a guide how to create a new module - paint by numbers...
-
 ## Create Tests
 
   - https://docs.ansible.com/ansible/latest/dev_guide/developing_modules_general.html

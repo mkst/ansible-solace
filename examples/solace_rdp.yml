@@ -1,0 +1,134 @@
+-
+  name: Setup AZ Rest Delivery Point, Rest Consumer and Queue Bindings
+
+  hosts: all
+
+  tasks:
+
+    - include_vars:
+        file: "{{ deploymentFile }}"
+        name: deployment
+
+    - name: Create RDP - Disabled
+      solace_rdp:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          enabled: false
+        state: present
+
+    - name: Add Client Profile Name to RDP
+      solace_rdp:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          clientProfileName: "{{ deployment.azRDPFunction.brokerConfig.clientProfileName | default('default') }}"
+        state: present
+
+    - name: Create RDP RestConsumer - Disabled
+      solace_rdp_rest_consumer:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        rdp_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.name }}"
+        settings:
+          enabled: false
+          remoteHost: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.host }}"
+          remotePort: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.port }}"
+          tlsEnabled: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.tlsEnabled }}"
+          outgoingConnectionCount: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.outgoingConnectionCount }}"
+          maxPostWaitTime: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.maxResponseWaitTimeSecs }}"
+          retryDelay: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.retryDelaySecs }}"
+
+        state: present
+
+    - name: Add the TLS Trusted Common Name
+      solace_rdp_rest_consumer_trusted_common_name:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        rdp_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        rest_consumer_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.name }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.tlsOptions.trustedCommonName }}"
+        state: present
+
+    - name: Create a Queue Binding
+      solace_rdp_queue_binding:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        rdp_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        name: "{{ item.queue }}"
+        settings:
+          postRequestTarget: "{{ item.postRequestTarget }}"
+        state: present
+
+      loop: "{{ deployment.azRDPFunction.brokerConfig.rdp.queueBindings }}"
+
+      register: result
+
+    - debug:
+        msg: "(solace_rdp_queueBinding): result={{ result }}"
+
+    - name: Enable the RDP RestConsumer
+      solace_rdp_rest_consumer:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        rdp_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.name }}"
+        settings:
+          enabled: true
+        state: present
+
+      register: result
+
+    - debug:
+        msg: "(solace_rdp_restConsumer): result={{ result }}"
+
+    - name: Enable RDP
+      solace_rdp:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        settings:
+          enabled: true
+        state: present
+
+
+###
+# The End.

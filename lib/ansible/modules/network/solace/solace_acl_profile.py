@@ -4,9 +4,15 @@
 # Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
 # MIT License
 
-"""Ansible-Solace Module for configuring Client Profiles"""
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
+
+
+ANSIBLE_METADATA = {
+    'metadata_version': '0.1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
 
 
 class SolaceACLProfileTask(su.SolaceTask):
@@ -14,40 +20,41 @@ class SolaceACLProfileTask(su.SolaceTask):
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def lookup_item(self):
-        return self.module.params['name']
-
     def get_args(self):
         return [self.module.params['msg_vpn']]
 
-    def get_func(self, solace_config, vpn):
-        """Pull configuration for all Client Profiles associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES]
-        return su.get_configuration(solace_config, path_array, 'aclProfileName')
+    LOOKUP_ITEM_KEY = 'aclProfileName'
+
+    def lookup_item(self):
+        # aclProfileName <= 32 chars; create a 'nicer' hint here
+        lookup_item = self.module.params['name']
+        if len(lookup_item) > 32:
+            raise ValueError("argument 'name' ({}) longer than 32 chars:'{}'".format(self.LOOKUP_ITEM_KEY, lookup_item))
+        return lookup_item
+
+    def get_func(self, solace_config, vpn, lookup_item_value):
+        # GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, acl_profile, settings=None):
-        """Create a Client Profile"""
         defaults = {
             'msgVpnName': vpn,
-            
         }
         mandatory = {
-            'aclProfileName': acl_profile
+            self.LOOKUP_ITEM_KEY: acl_profile
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES]
+        return su.make_post_request(solace_config, path_array, data)
 
-        return su.make_post_request(solace_config, path, data)
+    def update_func(self, solace_config, vpn, lookup_item_value, settings=None):
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def update_func(self, solace_config, vpn, acl_profile, settings=None):
-        """Update an existing Client Profile"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile])
-        return su.make_patch_request(solace_config, path, settings)
-
-    def delete_func(self, solace_config, vpn, acl_profile):
-        """Delete a Client Profile"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile])
-        return su.make_delete_request(solace_config, path)
+    def delete_func(self, solace_config, vpn, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -70,8 +77,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_acl_profile_task = SolaceACLProfileTask(module)
-    result = solace_acl_profile_task.do_task()
+    solace_task = SolaceACLProfileTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -83,3 +90,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

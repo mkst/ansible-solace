@@ -3,26 +3,33 @@
 # Copyright (c) 2019, Mark Street <mkst@protonmail.com>
 # MIT License
 
-"""Ansible-Solace Module for configuring Client Profiles"""
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
+
+ANSIBLE_METADATA = {
+    'metadata_version': '0.1.1',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
 
 
 class SolaceClientProfileTask(su.SolaceTask):
 
+    LOOKUP_ITEM_KEY = 'clientProfileName'
+
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
-
-    def lookup_item(self):
-        return self.module.params['name']
 
     def get_args(self):
         return [self.module.params['msg_vpn']]
 
-    def get_func(self, solace_config, vpn):
+    def lookup_item(self):
+        return self.module.params['name']
+
+    def get_func(self, solace_config, vpn, lookup_item_value):
         """Pull configuration for all Client Profiles associated with a given VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES]
-        return su.get_configuration(solace_config, path_array, 'clientProfileName')
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, client_profile, settings=None):
         """Create a Client Profile"""
@@ -32,19 +39,18 @@ class SolaceClientProfileTask(su.SolaceTask):
             'clientProfileName': client_profile
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES]
+        return su.make_post_request(solace_config, path_array, data)
 
-        return su.make_post_request(solace_config, path, data)
-
-    def update_func(self, solace_config, vpn, client_profile, settings=None):
+    def update_func(self, solace_config, vpn, lookup_item_value, settings=None):
         """Update an existing Client Profile"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
-        return su.make_patch_request(solace_config, path, settings)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, vpn, client_profile):
+    def delete_func(self, solace_config, vpn, lookup_item_value):
         """Delete a Client Profile"""
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, client_profile])
-        return su.make_delete_request(solace_config, path)
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.CLIENT_PROFILES, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
@@ -67,8 +73,8 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_client_profile_task = SolaceClientProfileTask(module)
-    result = solace_client_profile_task.do_task()
+    solace_task = SolaceClientProfileTask(module)
+    result = solace_task.do_task()
 
     module.exit_json(**result)
 
@@ -80,3 +86,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+###
+# The End.

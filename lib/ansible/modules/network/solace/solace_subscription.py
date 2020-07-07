@@ -7,8 +7,16 @@
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
+ANSIBLE_METADATA = {
+    'metadata_version': '0.1.0',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
 
 class SolaceSubscriptionTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'subscriptionTopic'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -19,28 +27,28 @@ class SolaceSubscriptionTask(su.SolaceTask):
     def get_args(self):
         return [self.module.params['msg_vpn'], self.module.params['queue']]
 
-    def get_func(self, solace_config, vpn, queue):
+    def get_func(self, solace_config, vpn, queue, lookup_item_value):
         """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
-        return su.get_configuration(solace_config, path_array, 'subscriptionTopic')
+        # GET /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions/{subscriptionTopic}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, lookup_item_value]
+        return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
     def create_func(self, solace_config, vpn, queue, topic, settings=None):
         """Create a Subscription for a Topic/Endpoint on a Queue"""
+        # POST /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions
         defaults = {}
         mandatory = {
             'subscriptionTopic': topic
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
+        return su.make_post_request(solace_config, path_array, data)
 
-        return su.make_post_request(solace_config, path, data)
-
-    def delete_func(self, solace_config, vpn, queue, topic):
+    def delete_func(self, solace_config, vpn, queue, lookup_item_value):
         """Delete a Subscription"""
-        # escape forwardslashes
-        topic = topic.replace('/', '%2F')
-        path = '/'.join([su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, topic])
-        return su.make_delete_request(solace_config, path)
+        # DELETE /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions/{subscriptionTopic}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, lookup_item_value]
+        return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():

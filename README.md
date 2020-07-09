@@ -7,10 +7,16 @@ Ansible modules to configure Solace PubSub+ event brokers with [SEMP v2](https:/
 ## Install
 
 Install ansible & python3.
+Check that python points to the right version:
+````bash
+python -V
+
+==> must be >=3.6
+````
 
 Install / upgrade ansible-solace:
 ````bash
-pip3 install --user --upgrade ansible-solace
+pip3 install ansible-solace
 ````
 Get the location of the package:
 ````bash
@@ -96,18 +102,18 @@ Copy the example below to `setUpQueue.yml`:
 
     - name: Add / update the queue
       solace_queue:
-      name: "my-queue"
-      settings:
-        egressEnabled: true
-        ingressEnabled: true
-        permission: "consume"
-      state: present
+        name: "my-queue"
+        settings:
+          egressEnabled: true
+          ingressEnabled: true
+          permission: "consume"
+        state: present
 
     - name: Create subscription on queues
       solace_subscription:
         queue: "my-queue"
         topic: "my/subscription/topic"
-      state: present
+        state: present
 
 ````
 ### Run the playbook

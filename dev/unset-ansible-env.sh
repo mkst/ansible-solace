@@ -35,13 +35,11 @@ if [[ -z $ANSIBLE_SOLACE_HOME ]]; then
     echo; echo "ANSIBLE_SOLACE_HOME not found, doing nothing."; echo; return 1
 fi
 
-#${FOO#prefix} remove prefix
-#${FOO##prefix} remove long prefix
 REMOVE_PATH="$ANSIBLE_SOLACE_HOME/lib/ansible/module_utils:"
 export ANSIBLE_MODULE_UTILS=${ANSIBLE_MODULE_UTILS#$REMOVE_PATH}
-if [[ -z $ANSIBLE_MODULE_UTILS ]]; then; unset ANSIBLE_MODULE_UTILS; fi
+if [[ -z $ANSIBLE_MODULE_UTILS ]]; then unset ANSIBLE_MODULE_UTILS; fi
 export ANSIBLE_LIBRARY=${ANSIBLE_MODULE_UTILS#$REMOVE_PATH}
-if [[ -z $ANSIBLE_LIBRARY ]]; then; unset ANSIBLE_LIBRARY; fi
+if [[ -z $ANSIBLE_LIBRARY ]]; then unset ANSIBLE_LIBRARY; fi
 unset ANSIBLE_SOLACE_HOME
 
 echo

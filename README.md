@@ -21,56 +21,103 @@ Location: .../Python/3.7/lib/python/site-packages
 ...
 
 ````
-
-
-set the ANSIBLE_LIBRARY to that ...
-export ANSIBLE_LIBRARY=/Users/rjgu/Library/Python/3.7/lib/python/site-packages/ansible/modules
-
-
-**Check:**
+Add location to `set-ansible-env.sh`:
 ````bash
+vi set-ansbile-env.sh
 
-pip3 list
-
-pip3 show ansible_solace
+export ANSIBLE_SOLACE_HOME="ansible-solace-location"
 
 ````
 
-## Configure?
+Source the script:
+````bash
+source set-ansbile-env.sh
 
-In order to use these modules, Ansible needs to know about them. You can either copy the files into one of Ansible's expected locations (per [Adding modules and plugins locally](https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html#adding-a-module-locally)) or you can set the `ANSIBLE_MODULE_UTILS` and `ANSIBLE_LIBRARY` environment variables at runtime:
+env | grep ANSIBLE
+````
 
-```bash
-ANSIBLE_MODULE_UTILS=$(pwd)/lib/ansible/module_utils \
-ANSIBLE_LIBRARY=$(pwd)/lib/ansible/modules \
-ansible-playbook examples/solace_vpn.yml
-```
-## EXAMPLES
+## Run the Example
 
-```yaml
-# Create a vpn with default settings
-- name: Create vpn foo
-  solace_vpn:
-    name: foo
-# Ensure a vpn called bar does not exist
-- name: Remove vpn bar
-  solace_vpn:
-    name: bar
-    state: absent
-# Set specific vpn setting on foo
-- name: Set MQTT listen port to 1234 on vpn foo
-  solace_vpn:
-    name: foo
-    settings:
-      serviceMqttPlainTextListenPort: 1234
-# Add a queue to VPN foo
-- name: Add a queue to VPN foo
-  solace_queue:
-    name: baz
-    msg_vpn: foo
-    settings:
-      owner: "admin"
-```
+### Pre-requisites
+
+* a Solace PubSub+ Broker (Cloud or Software)
+* credentials for the admin (sempv2) interface
+
+### Configure the Inventory
+
+Copy the example below to `brokers.inventory.json` and enter the values:
+
+````json
+{
+  "all": {
+    "hosts": {
+      "{your broker name}": {
+        "ansible_connection": "local",
+        "sempv2_host": "{host, e.g. xxxx.messaging.solace.cloud}",
+        "sempv2_port": 943,
+        "sempv2_is_secure_connection": true,
+        "sempv2_username": "{admin user name}",
+        "sempv2_password": "{admin user password}",
+        "sempv2_timeout": "60",
+        "vpn": "{message vpn}"
+      }
+    }
+  }
+}
+````
+
+Copy the example below to `setUpQueue.yml`:
+
+````yaml
+-
+  name: Setup A Queue with a Subscription
+
+  hosts: all
+
+  module_defaults:
+    solace_subscription:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+    solace_queue:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+
+  tasks:
+
+    - name: Add / update the queue
+      solace_queue:
+      name: "my-queue"
+      settings:
+        egressEnabled: true
+        ingressEnabled: true
+        permission: "consume"
+      state: present
+
+    - name: Create subscription on queues
+      solace_subscription:
+        queue: "my-queue"
+        topic: "my/subscription/topic"
+      state: present
+
+````
+### Run the playbook
+
+````bash
+ansible-playbook -i brokers.inventory.json setUpQueue.yml
+````
+
+# TODO from here
+
 
 # MODULES
 

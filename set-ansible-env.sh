@@ -1,4 +1,4 @@
-
+#!/bin/bash
 # --------------------------------------------------------------------------
 # MIT License
 #
@@ -23,36 +23,37 @@
 # SOFTWARE.
 # --------------------------------------------------------------------------
 
-import setuptools
+################################################################################
+# usage: source set-ansible-env.sh
+#
+# Prepend ansible-solace path to ansible env vars
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+######
+#
+# Set the location of ansible-solace installation.
+# pip3 show ansible-solace
+# copy the Location: <ansible-solace-install-location>
+# paste to ANSIBLE_SOLACE_HOME
+#
+######
 
-setuptools.setup(
-    name="ansible-solace",
-    version="0.2.10",
-    author="Ricardo Gomez-Ulmke",
-    author_email="ricardo.gomez-ulmke@solace.com",
-    description="Ansible modules to configure Solace PubSub+ event brokers with SEMP(v2).",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/solace-iot-team/ansible-solace",
-    project_urls={
-        "Source": "https://github.com/solace-iot-team/ansible-solace",
-        "Tracker": "https://github.com/solace-iot-team/ansible-solace/issues",
-    },
-    license='MIT License',
-    package_dir={'': 'lib'},
-    packages=['ansible/module_utils/network/solace', 'ansible/modules/network/solace'],
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-        "Topic :: System :: Networking"
-    ],
-    python_requires='>=3.6',
-    install_requires=['ansible>=2.9.10'],
-    keywords='solace sempv2 ansible pubsub+'
-)
+
+export ANSIBLE_SOLACE_HOME="ansible-solace-location"
+
+###
+# dont' change
+if [[ -z $ANSIBLE_MODULE_UTILS ]]; then COLON=""; else COLON=":"; fi
+export ANSIBLE_MODULE_UTILS="$ANSIBLE_SOLACE_HOME/ansible/module_utils$COLON$ANSIBLE_MODULE_UTILS"
+if [[ -z $ANSIBLE_LIBRARY ]]; then COLON=""; else COLON=":"; fi
+export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/ansible/modules$COLON$ANSIBLE_LIBRARY"
+
+clear
+echo
+echo "Prepending ansible-solace path to ansible env vars:"; echo
+echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
+echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
+echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"
+echo
+
+###
+# The End.

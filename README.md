@@ -1,7 +1,42 @@
-# ansible-solace
-Ansible module(s) to configure Solace Brokers via [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm).
+# Ansible Modules for Solace PubSub+ Event Brokers SEMP(v2) REST API
+
+Ansible modules to configure Solace PubSub+ event brokers with [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm).
 
 # QUICKSTART
+
+## Install
+
+Install ansible & python3.
+
+Install / upgrade ansible-solace:
+````bash
+pip3 install --user --upgrade ansible-solace
+````
+Get the location of the package:
+````bash
+pip3 show ansible-solace
+
+...
+Location: .../Python/3.7/lib/python/site-packages
+...
+
+````
+
+
+set the ANSIBLE_LIBRARY to that ...
+export ANSIBLE_LIBRARY=/Users/rjgu/Library/Python/3.7/lib/python/site-packages/ansible/modules
+
+
+**Check:**
+````bash
+
+pip3 list
+
+pip3 show ansible_solace
+
+````
+
+## Configure?
 
 In order to use these modules, Ansible needs to know about them. You can either copy the files into one of Ansible's expected locations (per [Adding modules and plugins locally](https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html#adding-a-module-locally)) or you can set the `ANSIBLE_MODULE_UTILS` and `ANSIBLE_LIBRARY` environment variables at runtime:
 

@@ -2,3 +2,8 @@
 *.retry
 lib/ansible/module_utils/network/.DS_Store
 .DS_Store
+build
+dist
+ansible_solace.egg-info
+build*.sh
+upload*.sh

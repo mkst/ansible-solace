@@ -30,7 +30,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ansible-solace",
-    version="0.2.0-test-1",
+    version="0.2.0.dev1",
     author="Ricardo Gomez-Ulmke",
     author_email="ricardo.gomez-ulmke@solace.com",
     description="Ansible modules to configure Solace PubSub+ event brokers with SEMP(v2).",

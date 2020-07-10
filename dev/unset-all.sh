@@ -1,8 +1,8 @@
 #!/bin/bash
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 # MIT License
 #
-# Copyright (c) 2020 Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,22 +21,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 
 
 ################################################################################
 # usage: source unset-all.sh
 #
-# Unsets all three variables
+# Unsets all variables
 
 clear
 
+unset ANSIBLE_PYTHON_INTERPRETER
 unset ANSIBLE_MODULE_UTILS
 unset ANSIBLE_LIBRARY
 unset ANSIBLE_SOLACE_HOME
 
 echo
 echo "Unset ansible env vars:"; echo
+echo "ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
 echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
 echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
 echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"

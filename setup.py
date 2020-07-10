@@ -2,7 +2,7 @@
 # --------------------------------------------------------------------------
 # MIT License
 #
-# Copyright (c) 2020 Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,11 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ansible-solace",
-    version="0.2.0.dev1",
-    author="Ricardo Gomez-Ulmke",
+    version="0.2.0.dev2",
+    author="Solace Corporation",
     author_email="ricardo.gomez-ulmke@solace.com",
+    maintainer="Ricardo Gomez-Ulmke",
+    maintainer_email="ricardo.gomez-ulmke@solace.com",
     description="Ansible modules to configure Solace PubSub+ event brokers with SEMP(v2).",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -53,6 +55,8 @@ setuptools.setup(
         "Topic :: System :: Networking"
     ],
     python_requires='>=3.6',
-    install_requires=['ansible>=2.9.10'],
+    install_requires=[
+        'requests>=2.24.0'
+    ],
     keywords='solace sempv2 ansible pubsub+'
 )

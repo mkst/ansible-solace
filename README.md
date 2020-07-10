@@ -18,29 +18,47 @@ Install / upgrade ansible-solace:
 ````bash
 pip3 install ansible-solace
 ````
+
+**Package location:**
+
 Get the location of the package:
 ````bash
 pip3 show ansible-solace
 
+Name: ansible-solace
 ...
-Location: .../Python/3.7/lib/python/site-packages
+Location: {your-install-path}/site-packages
 ...
-
 ````
-Add location to `set-ansible-env.sh`:
+If your Ansible install location is different to the ansible-solace package, you have to tell Ansible about these modules.
+You can find a description here: [Adding modules and plugins locally](https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html#adding-a-module-locally)
+or you can set the `ANSIBLE_MODULE_UTILS` and `ANSIBLE_LIBRARY` environment variables:
+
+```bash
+export ANSIBLE_MODULE_UTILS={your-install-path}/ansible/module_utils
+export ANSIBLE_LIBRARY={your-install-path}/ansible/modules
+
+# check:
+ansible-doc -l | grep ansible-solace
+
+```
+
+_Note: You can also have a look at `set-ansible-env.sh`._
+
+**Python interpreter:**
+
+Depending on your OS/environment, you may have to set the python interpreter explicitly.
+For example, set the `ANSIBLE_PYTHON_INTERPRETER` variable:
 ````bash
-vi set-ansbile-env.sh
-
-export ANSIBLE_SOLACE_HOME="ansible-solace-location"
-
+# find the location of your python installation
+brew info python
+# or
+which python
+# set the location
+# e.g.
+export ANSIBLE_PYTHON_INTERPRETER=/usr/local/bin/python
 ````
 
-Source the script:
-````bash
-source set-ansbile-env.sh
-
-env | grep ANSIBLE
-````
 
 ## Run the Example
 
@@ -72,7 +90,7 @@ Copy the example below to `brokers.inventory.json` and enter the values:
 }
 ````
 
-Copy the example below to `setUpQueue.yml`:
+Copy the example below to `setup-queue.playbook.yml`:
 
 ````yaml
 -
@@ -119,11 +137,8 @@ Copy the example below to `setUpQueue.yml`:
 ### Run the playbook
 
 ````bash
-ansible-playbook -i brokers.inventory.json setUpQueue.yml
+ansible-playbook -i brokers.inventory.json setup-queue.playbook.yml
 ````
-
-# TODO from here
-
 
 # MODULES
 

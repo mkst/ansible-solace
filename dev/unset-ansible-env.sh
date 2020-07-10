@@ -1,8 +1,8 @@
 #!/bin/bash
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 # MIT License
 #
-# Copyright (c) 2020 Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 
 
 ################################################################################
@@ -41,9 +41,10 @@ if [[ -z $ANSIBLE_MODULE_UTILS ]]; then unset ANSIBLE_MODULE_UTILS; fi
 export ANSIBLE_LIBRARY=${ANSIBLE_MODULE_UTILS#$REMOVE_PATH}
 if [[ -z $ANSIBLE_LIBRARY ]]; then unset ANSIBLE_LIBRARY; fi
 unset ANSIBLE_SOLACE_HOME
-
+unset ANSIBLE_PYTHON_INTERPRETER
 echo
 echo "Removed ansible-solace path from ansible env vars:"; echo
+echo "ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
 echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
 echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
 echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"

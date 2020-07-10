@@ -1,8 +1,8 @@
 #!/bin/bash
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 # MIT License
 #
-# Copyright (c) 2020 Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# --------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 
 ################################################################################
 # usage: source set-ansible-env.sh
 #
 # Prepend ansible-solace path to ansible env vars
+
+#export ANSIBLE_PYTHON_INTERPRETER=/usr/local/bin/python
 
 export ANSIBLE_SOLACE_HOME=`pwd`/..
 if [[ -z $ANSIBLE_MODULE_UTILS ]]; then COLON=""; else COLON=":"; fi
@@ -37,6 +39,7 @@ export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/lib/ansible/modules$COLON$ANSIBLE_L
 clear
 echo
 echo "Prepending ansible-solace path to ansible env vars:"; echo
+echo "ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
 echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
 echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
 echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"

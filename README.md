@@ -9,9 +9,7 @@ Ansible modules to configure Solace PubSub+ event brokers with [SEMP v2](https:/
 Install ansible & python3.
 Check that python points to the right version:
 ````bash
-python -V
-
-==> must be >=3.6
+python -V   # ==> must be >=3.6
 ````
 
 Install / upgrade ansible-solace:

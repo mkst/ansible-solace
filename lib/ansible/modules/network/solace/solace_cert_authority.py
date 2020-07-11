@@ -1,85 +1,139 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
-# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# ---------------------------------------------------------------------------------------------
 # MIT License
+#
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ---------------------------------------------------------------------------------------------
 
-"""Ansible-Solace Module for configuring cert_authorities"""
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
 
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
-
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
 
 DOCUMENTATION = '''
 ---
 module: solace_cert_authority
 
-short_description: Configure cert authorities on Solace Appliances
-
-version_added: "2.9"
+short_description: Configure a certificate authority object.
 
 description:
-    - "Allows addition, removal and configuration of cert authorities on Solace Applicances in an idempotent manner."
+  - "Allows addition, removal and configuration of certificate authority objects on Solace Brokers in an idempotent manner."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/certAuthority."
 
 options:
-    name:
-        description:
-            - This is the name of the cert authority being configured
-        required: true
-    state:
-        description:
-            - Target state of the cert authority, present/absent
-        required: false
-    host:
-        description:
-            - Hostname of Solace Appliance, default is "localhost"
-        required: false
-    port:
-        description:
-            - Management port of Solace Appliance, default is 8080
-        required: false
-    secure_connection:
-        description:
-            - If true use https rather than http for querying
-        required: false
-    username:
-        description:
-            - Administrator username for Solace Appliance, defaults is "admin"
-        required: false
-    password:
-        description:
-            - Administrator password for Solace Appliance, defaults is "admin"
-        required: false
-    settings:
-        description:
-            - JSON dictionary of additional configuration
-        required: false
-    timeout:
-        description:
-            - Connection timeout when making requests, defaults to 1 (second)
-        required: false
-    x_broker:
-        description:
-            - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
-        required: false
+  name:
+    description: The name of the Certificate Authority. Maps to 'certAuthorityName' in the API.
+    required: true
+  settings:
+    description: JSON dictionary of additional configuration, see Reference documentation.
+    required: false
+  state:
+    description: Target state. [present|absent].
+    required: false
+    default: present
+  host:
+    description: Hostname of Solace Broker.
+    required: false
+    default: "localhost"
+  port:
+    description: Management port of Solace Broker.
+    required: false
+    default: 8080
+  secure_connection:
+    description: If true, use https rather than http for querying.
+    required: false
+    default: false
+  username:
+    description: Administrator username for Solace Broker.
+    required: false
+    default: "admin"
+  password:
+    description: Administrator password for Solace Broker.
+    required: false
+    default: "admin"
+  timeout:
+    description: Connection timeout in seconds for the http request.
+    required: false
+    default: 1
+  x_broker:
+    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    required: false
+
 
 author:
-    - Mark Street (mkst@protonmail.com)
-    - Swen-Helge Huber (swen-helge.huber@solace.com)
+  - Mark Street (mkst@protonmail.com)
+  - Swen-Helge Huber (swen-helge.huber@solace.com)
+  - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 '''
 
 EXAMPLES = '''
+  - name: Remove 'digicert' cert authority
+    solace_cert_authority:
+      name: digicert
+      state: absent
 
+
+  - name: Add 'digicert' VPN
+    solace_cert_authority:
+      name: digicert
+      state: present
+      cert_content: |
+        -----BEGIN CERTIFICATE-----
+        MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+        MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+        d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+        QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+        MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+        b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+        9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+        CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+        nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+        43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+        T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+        gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+        BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+        TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+        DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+        hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+        06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+        PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+        YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+        CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+        -----END CERTIFICATE-----
+
+  - name: Add 'digicert' VPN
+    solace_cert_authority:
+      name: digicert
+      settings:
+        ocspTimeout: 25
 '''
 
 RETURN = '''
 response:
-    description: The response back from the Solace device
+    description: The response from the Solace Sempv2 request.
     type: dict
 '''
 

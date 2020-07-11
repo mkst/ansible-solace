@@ -1,85 +1,98 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
-# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke <ricardo.gomez-ulmke@solace.com>
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# ---------------------------------------------------------------------------------------------
 # MIT License
+#
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ---------------------------------------------------------------------------------------------
 
-"""Ansible-Solace Module for configuring Rest Consumers on RDPs"""
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
-
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.0',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
 
 DOCUMENTATION = '''
 ---
 module: solace_rdp_restConsumer
 
-short_description: Configure a rest consumer for a rest delivery point (rdp) on a message vpn.
-
-version_added: "2.9"
+short_description: Configure a rest consumer object for an RDP.
 
 description:
-    - "Allows addition, removal and configuration of Rest Consumers for a Rest Delivery Point on Solace Brokers in an idempotent manner. "
-    - "Reference documentation: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/restDeliveryPoint/createMsgVpnRestDeliveryPointRestConsumer."
+  - "Allows addition, removal and configuration of rest consumer objects for an RDP."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/restDeliveryPoint/createMsgVpnRestDeliveryPointRestConsumer."
 
 options:
-    rdp_name:
-        description:
-            - This is the RDP name the Rest Consumer will be configured for
-        required: true
-    name:
-        description:
-            - This is the Rest Consumer name
-        required: true
-    msg_vpn:
-        description:
-            - The message vpn the RDP/Rest Consumer is on/created
-        required: true
-    settings:
-        description:
-            - JSON dictionary of additional configuration, see Reference documentation
-        required: false
-    state:
-        description:
-            - Target state, present/absent
-        required: false
-    host:
-        description:
-            - Hostname of Solace Broker, default is "localhost"
-        required: false
-    port:
-        description:
-            - Management port of Solace Broker, default is 8080
-        required: false
-    secure_connection:
-        description:
-            - If true use https rather than http for querying
-        required: false
-    username:
-        description:
-            - Administrator username for Solace Broker, default is "admin"
-        required: false
-    password:
-        description:
-            - Administrator password for Solace Broker, default is "admin"
-        required: false
-    timeout:
-        description:
-            - Connection timeout when making requests, defaults to 1 (second)
-        required: false
-    x_broker:
-        description:
-            - Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure
-        required: false
+  name:
+    description: The rest consumer name. Maps to 'restConsumerName' in the API.
+    required: true
+  rdp_name:
+    description: The RDP name. Maps to 'restDeliveryPointName' in the API.
+    required: true
+  settings:
+    description: JSON dictionary of additional configuration, see Reference documentation.
+    required: false
+  state:
+    description: Target state. [present|absent].
+    required: false
+    default: present
+  host:
+    description: Hostname of Solace Broker.
+    required: false
+    default: "localhost"
+  port:
+    description: Management port of Solace Broker.
+    required: false
+    default: 8080
+  msg_vpn:
+    description: The message vpn.
+    required: true
+  secure_connection:
+    description: If true, use https rather than http for querying.
+    required: false
+    default: false
+  username:
+    description: Administrator username for Solace Broker.
+    required: false
+    default: "admin"
+  password:
+    description: Administrator password for Solace Broker.
+    required: false
+    default: "admin"
+  timeout:
+    description: Connection timeout in seconds for the http request.
+    required: false
+    default: 1
+  x_broker:
+    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    required: false
+
 
 author:
-    - Mark Street (mkst@protonmail.com)
-    - Swen-Helge Huber (swen-helge.huber@solace.com)
-    - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+  - Mark Street (mkst@protonmail.com)
+  - Swen-Helge Huber (swen-helge.huber@solace.com)
+  - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 '''
 
 EXAMPLES = '''
@@ -109,12 +122,11 @@ EXAMPLES = '''
 
 - debug:
     msg: "(solace_rdp_restConsumer): result={{ result }}"
-
 '''
 
 RETURN = '''
 response:
-    description: The response back from the Solace Sempv2 request
+    description: The response from the Solace Sempv2 request.
     type: dict
 '''
 
@@ -198,3 +210,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

@@ -1,17 +1,123 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# ---------------------------------------------------------------------------------------------
 # MIT License
+#
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ---------------------------------------------------------------------------------------------
 
-"""Ansible-Solace Module for configuring Subscriptions"""
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.0',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+DOCUMENTATION = '''
+---
+module: solace_subscription
+
+short_description: Configure a subscription object on a queue.
+
+description:
+  - "Allows addition, removal and configuration of subscription objects on a queue."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/queue/createMsgVpnQueueSubscription."
+
+options:
+  name:
+    description: The subscription topic. Maps to 'subscriptionTopic' in the API.
+    required: true
+  queue:
+    description: The queue. Maps to 'queueName' in the API.
+    required: true
+  settings:
+    description: JSON dictionary of additional configuration, see Reference documentation.
+    required: false
+  state:
+    description: Target state. [present|absent].
+    required: false
+    default: present
+  host:
+    description: Hostname of Solace Broker.
+    required: false
+    default: "localhost"
+  port:
+    description: Management port of Solace Broker.
+    required: false
+    default: 8080
+  msg_vpn:
+    description: The message vpn.
+    required: true
+  secure_connection:
+    description: If true, use https rather than http for querying.
+    required: false
+    default: false
+  username:
+    description: Administrator username for Solace Broker.
+    required: false
+    default: "admin"
+  password:
+    description: Administrator password for Solace Broker.
+    required: false
+    default: "admin"
+  timeout:
+    description: Connection timeout in seconds for the http request.
+    required: false
+    default: 1
+  x_broker:
+    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    required: false
+
+
+author:
+  - Mark Street (mkst@protonmail.com)
+  - Swen-Helge Huber (swen-helge.huber@solace.com)
+  - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+'''
+
+EXAMPLES = '''
+    - name: Create subscription on queues
+      solace_subscription:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        queue: "{{ item.name }}"
+        name: "{{ item.subscription }}"
+        state: present
+      register: result
+      loop: "{{ deployment.azRDPFunction.brokerConfig.queues }}"
+      when: result.rc|default(0)==0
+'''
+
+RETURN = '''
+response:
+    description: The response from the Solace Sempv2 request.
+    type: dict
+'''
 
 
 class SolaceSubscriptionTask(su.SolaceTask):
@@ -22,7 +128,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
         su.SolaceTask.__init__(self, module)
 
     def lookup_item(self):
-        return self.module.params['topic']
+        return self.module.params['name']
 
     def get_args(self):
         return [self.module.params['msg_vpn'], self.module.params['queue']]
@@ -54,7 +160,7 @@ class SolaceSubscriptionTask(su.SolaceTask):
 def run_module():
     """Entrypoint to module"""
     module_args = dict(
-        topic=dict(type='str', required=True),
+        name=dict(type='str', required=True),
         queue=dict(type='str', required=True),
         msg_vpn=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
@@ -85,3 +191,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+###
+# The End.

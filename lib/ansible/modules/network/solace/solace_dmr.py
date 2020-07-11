@@ -1,17 +1,5 @@
-#!/usr/bin/env python
+TODO
 
-# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
-# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
-# MIT License
-
-import ansible.module_utils.network.solace.solace_utils as su
-from ansible.module_utils.basic import AnsibleModule
-
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
 
 DOCUMENTATION = '''
 ---

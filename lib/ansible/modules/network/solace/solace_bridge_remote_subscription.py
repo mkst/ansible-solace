@@ -1,21 +1,136 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
-# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# ---------------------------------------------------------------------------------------------
 # MIT License
+#
+# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+# Copyright (c) 2020, Solace Corporation, Swen-Helge Huber <swen-helge.huber@solace.com
+# Copyright (c) 2019, Mark Street <mkst@protonmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+# ---------------------------------------------------------------------------------------------
 
-"""Ansible-Solace Module for configuring Bridges"""
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
 
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+DOCUMENTATION = '''
+---
+module: solace_bridge_remote_subscription
+
+short_description: Configure a remote subscription on a bridge.
+
+description:
+  - "Allows addition and removal of remote subscription objects on a bridge in an idempotent manner."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/bridge/createMsgVpnBridgeRemoteSubscription."
+
+options:
+  name:
+    description: Topic. Maps to 'remoteSubscriptionTopic' in the API.
+    required: true
+  bridge_name:
+    description: The bridge.
+    required: true
+  virtual_router:
+    description: The virtual router.
+    required: true
+  deliver_always:
+    description: Flag 'deliverAlwaysEnabled' in the API.
+    required: false
+    default: true
+  settings:
+    description: JSON dictionary of additional configuration, see Reference documentation.
+    required: false
+  state:
+    description: Target state. [present|absent].
+    required: false
+    default: present
+  host:
+    description: Hostname of Solace Broker.
+    required: false
+    default: "localhost"
+  port:
+    description: Management port of Solace Broker.
+    required: false
+    default: 8080
+  msg_vpn:
+    description: The message vpn.
+    required: true
+  secure_connection:
+    description: If true, use https rather than http for querying.
+    required: false
+    default: false
+  username:
+    description: Administrator username for Solace Broker.
+    required: false
+    default: "admin"
+  password:
+    description: Administrator password for Solace Broker.
+    required: false
+    default: "admin"
+  timeout:
+    description: Connection timeout in seconds for the http request.
+    required: false
+    default: 1
+  x_broker:
+    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    required: false
+
+
+author:
+  - Mark Street (mkst@protonmail.com)
+  - Swen-Helge Huber (swen-helge.huber@solace.com)
+  - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
+'''
+
+EXAMPLES = '''
+  - name: Remove Remote Subscription
+    solace_bridge_remote_subscription:
+      name: "{{ remote_subscription }}"
+      bridge_name: "{{ bridge }}"
+      msg_vpn: "{{ msg_vpn }}"
+      virtual_router: "{{ virtual_router }}"
+      deliver_always: false
+      state: absent
+
+  - name: Add Remote Subscription
+    solace_bridge_remote_subscription:
+      name: "{{ remote_subscription }}"
+      msg_vpn: "{{ msg_vpn }}"
+      bridge_name: "{{ bridge }}"
+      virtual_router: "{{ virtual_router }}"
+      deliver_always: true
+'''
+
+RETURN = '''
+response:
+    description: The response from the Solace Sempv2 request.
+    type: dict
+'''
 
 
 class SolaceBridgeRemoteSubscriptionsTask(su.SolaceTask):
+
+    LOOKUP_ITEM_KEY = 'remoteSubscriptionTopic'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -23,8 +138,6 @@ class SolaceBridgeRemoteSubscriptionsTask(su.SolaceTask):
     def get_args(self):
         return [self.module.params['msg_vpn'], self.module.params['virtual_router'],
                 self.module.params['bridge_name'], self.module.params['deliver_always']]
-
-    LOOKUP_ITEM_KEY = 'remoteSubscriptionTopic'
 
     def lookup_item(self):
         return self.module.params['name']

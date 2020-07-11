@@ -27,7 +27,7 @@
         timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
         msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
         queue: "{{ item.name }}"
-        topic: "{{ item.subscription }}"
+        name: "{{ item.subscription }}"
         state: present
       register: result
       loop: "{{ deployment.azRDPFunction.brokerConfig.queues }}"

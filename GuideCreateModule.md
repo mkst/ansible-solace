@@ -26,17 +26,12 @@ This guide walks through how new Sempv2 requests are implemented using the frame
 
 # Adjusting the code for the new module
 
-## Version number
+## License & metadata
 
-Pattern: `<major>.<minor>.<patch>`
+Copy the license. Add your name & e-mail to the list.
 
-````python
-ANSIBLE_METADATA = {
-    'metadata_version': '0.1.0',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
-````
+Keep `ANSIBLE_METADATA` as is.
+
 ## Documentation
 
 Provide at a minimum:
@@ -44,9 +39,9 @@ Provide at a minimum:
 * module
 * short_description
 * description
-  - add the link to the Sempv2 Resource
+  - add the link to the Sempv2 Resource.
 * options
-  - provide at least the options that are not common to all modules
+  - copy the common options and add the module specific options.
 * author
   - add your name & e-mail
 * example

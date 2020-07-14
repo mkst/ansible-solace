@@ -32,6 +32,8 @@ import re
 import traceback
 import logging
 import json
+from ansible.errors import AnsibleError
+from ansible.utils.display import Display
 
 try:
     import requests
@@ -80,7 +82,7 @@ CERT_AUTHORITIES = 'certAuthorities'
 
 ################################################################################################
 # logging
-ENABLE_LOGGING = False  # False to disable
+ENABLE_LOGGING = True  # False to disable
 
 
 def init_logging():
@@ -104,12 +106,14 @@ class SolaceConfig(object):
                  vmr_auth,
                  vmr_secure=False,
                  vmr_timeout=1,
-                 x_broker=''):
+                 x_broker='',
+                 vmr_sempVersion=''):
         self.vmr_auth = vmr_auth
         self.vmr_timeout = float(vmr_timeout)
-
         self.vmr_url = ('https' if vmr_secure else 'http') + '://' + vmr_host + ':' + str(vmr_port)
         self.x_broker = x_broker
+        self.vmr_sempVersion = vmr_sempVersion
+        return
 
 
 class SolaceTask:
@@ -122,7 +126,8 @@ class SolaceTask:
             vmr_auth=(self.module.params['username'], self.module.params['password']),
             vmr_secure=self.module.params['secure_connection'],
             vmr_timeout=self.module.params['timeout'],
-            x_broker=self.module.params.get('x_broker', '')
+            x_broker=self.module.params.get('x_broker', ''),
+            vmr_sempVersion=self.module.params.get('semp_version', '')
         )
         return
 
@@ -135,6 +140,12 @@ class SolaceTask:
             changed=False,
             response=dict()
         )
+
+        logging.debug("solace_config.vmr_sempVersion=%s", self.solace_config.vmr_sempVersion)
+
+        # if no vmr_sempVersion then get it from broker
+        if self.solace_config.vmr_sempVersion == '':
+            self.solace_config.vmr_sempVersion = get_semp_api_version(self.solace_config)
 
         crud_args = self.crud_args()
 
@@ -224,6 +235,32 @@ class SolaceTask:
 
     def crud_args(self):
         return self.get_args() + [self.lookup_item()]
+
+
+def get_semp_api_version(solace_config):
+    ok, resp = make_get_request(solace_config, [SEMP_V2_CONFIG, "about", "api"])
+    if ok:
+        return resp['sempVersion']
+    else:
+        # about/api itself was only introduced in 2.4
+        raise AnsibleError('Unable to retrieve about/api info, incompatible broker version. \n%s' % json.dumps(resp, indent=2))
+
+
+def compose_module_args(module_args):
+    _module_args = dict(
+        host=dict(type='str', default='localhost'),
+        port=dict(type='int', default=8080),
+        secure_connection=dict(type='bool', default=False),
+        username=dict(type='str', default='admin'),
+        password=dict(type='str', default='admin', no_log=True),
+        settings=dict(type='dict', require=False),
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False),
+        x_broker=dict(type='str', default=''),
+        semp_version=dict(type='str', require=False)
+    )
+    _module_args.update(module_args)
+    return _module_args
 
 
 # internal helper functions

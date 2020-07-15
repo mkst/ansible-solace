@@ -32,8 +32,6 @@ import re
 import traceback
 import logging
 import json
-from ansible.errors import AnsibleError
-from ansible.utils.display import Display
 
 try:
     import requests
@@ -82,7 +80,7 @@ CERT_AUTHORITIES = 'certAuthorities'
 
 ################################################################################################
 # logging
-ENABLE_LOGGING = True  # False to disable
+ENABLE_LOGGING = False  # False to disable
 
 
 def init_logging():
@@ -140,12 +138,6 @@ class SolaceTask:
             changed=False,
             response=dict()
         )
-
-        logging.debug("solace_config.vmr_sempVersion=%s", self.solace_config.vmr_sempVersion)
-
-        # if no vmr_sempVersion then get it from broker
-        if self.solace_config.vmr_sempVersion == '':
-            self.solace_config.vmr_sempVersion = get_semp_api_version(self.solace_config)
 
         crud_args = self.crud_args()
 
@@ -237,15 +229,6 @@ class SolaceTask:
         return self.get_args() + [self.lookup_item()]
 
 
-def get_semp_api_version(solace_config):
-    ok, resp = make_get_request(solace_config, [SEMP_V2_CONFIG, "about", "api"])
-    if ok:
-        return resp['sempVersion']
-    else:
-        # about/api itself was only introduced in 2.4
-        raise AnsibleError('Unable to retrieve about/api info, incompatible broker version. \n%s' % json.dumps(resp, indent=2))
-
-
 def compose_module_args(module_args):
     _module_args = dict(
         host=dict(type='str', default='localhost'),
@@ -263,7 +246,6 @@ def compose_module_args(module_args):
     return _module_args
 
 
-# internal helper functions
 def merge_dicts(*argv):
     data = dict()
     for arg in argv:
@@ -275,6 +257,9 @@ def merge_dicts(*argv):
 def _build_config_dict(resp, key):
     if not type(resp) is dict:
         raise TypeError("argument 'resp' is not a 'dict' but {}. Hint: check you are using Sempv2 GET single item call and not a list of items.".format(type(resp)))
+    # wrong LOOKUP_ITEM_KEY in module
+    if key not in resp:
+        raise ValueError("wrong 'LOOKUP_ITEM_KEY' in module. semp GET response does not contain key='{}'".format(key))
     # resp is a single dict, not an array
     # return an array with 1 element
     d = dict()

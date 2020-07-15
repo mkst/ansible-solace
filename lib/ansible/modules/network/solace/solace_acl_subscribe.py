@@ -37,9 +37,10 @@ DOCUMENTATION = '''
 ---
 module: solace_acl_subscribe
 
-short_description: Configure a subscribe topic exception on an ACL Profile.
+short_description: DEPRECATED. Use 'solace_acl_subscribe_topic_exception' instead.
 
 description:
+  - "DEPRECATED. Use 'solace_acl_subscribe_topic_exception' instead."
   - "Allows addition and removal of subscribe topic exception(s) on an ACL Profile in an idempotent manner."
   - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeTopicException."
 

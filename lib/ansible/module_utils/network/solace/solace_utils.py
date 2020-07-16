@@ -250,6 +250,15 @@ def compose_module_args(module_args):
     return _module_args
 
 
+def get_semp_version_key(version_key, lookup_key, lookup_dict):
+    if version_key not in lookup_dict:
+        raise ValueError("version_key: '{}' not found in lookup_dict: {}".format(version_key, json.dumps(lookup_dict)))
+    version_lookup_dict = lookup_dict[version_key]
+    if lookup_key not in version_lookup_dict:
+        raise ValueError("lookup_key: '{}' not found in lookup_dict['{}']: '{}'".format(lookup_key, version_key, json.dumps(version_lookup_dict)))
+    return version_lookup_dict[lookup_key]
+
+
 def merge_dicts(*argv):
     data = dict()
     for arg in argv:

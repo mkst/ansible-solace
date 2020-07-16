@@ -32,6 +32,8 @@ import re
 import traceback
 import logging
 import json
+import os
+from distutils.util import strtobool
 
 try:
     import requests
@@ -79,20 +81,22 @@ TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 CERT_AUTHORITIES = 'certAuthorities'
 
 ################################################################################################
-# logging
+# initialize logging
 ENABLE_LOGGING = False  # False to disable
+enableLoggingEnvVal = os.getenv('ANSIBLE_SOLACE_ENABLE_LOGGING')
+if enableLoggingEnvVal is not None and enableLoggingEnvVal != '':
+    try:
+        ENABLE_LOGGING = bool(strtobool(enableLoggingEnvVal))
+    except ValueError:
+        raise ValueError("invalid value for env var: 'ANSIBLE_SOLACE_ENABLE_LOGGING={}'. use 'true' or 'false' instead.".format(enableLoggingEnvVal))
 
-
-def init_logging():
+if ENABLE_LOGGING:
     logging.basicConfig(filename='ansible_solace.log',
                         level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s(): %(message)s')
     logging.info('Module start #############################################################################################')
-    return
 
-
-if ENABLE_LOGGING:
-    init_logging()
+################################################################################################
 
 
 class SolaceConfig(object):

@@ -91,7 +91,7 @@ if enableLoggingEnvVal is not None and enableLoggingEnvVal != '':
         raise ValueError("invalid value for env var: 'ANSIBLE_SOLACE_ENABLE_LOGGING={}'. use 'true' or 'false' instead.".format(enableLoggingEnvVal))
 
 if ENABLE_LOGGING:
-    logging.basicConfig(filename='ansible_solace.log',
+    logging.basicConfig(filename='ansible-solace.log',
                         level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s(): %(message)s')
     logging.info('Module start #############################################################################################')
@@ -310,23 +310,50 @@ def get_configuration(solace_config, path_array, key):
 
 
 # request/response handling
+
+def log_http_roundtrip(resp):
+    # body is either empty or of type 'bytes'
+    if hasattr(resp.request, 'body') and resp.request.body is not None:
+        body = json.loads(resp.request.body.decode())
+    else:
+        body = "{}"
+
+    log = {
+        'request': {
+            'method': resp.request.method,
+            'url': resp.request.url,
+            'headers': dict(resp.request.headers),
+            'body': body
+        },
+        'response': {
+            'code': resp.status_code,
+            'reason': resp.reason,
+            'url': resp.url,
+            'headers': dict(resp.headers),
+            'body': json.loads(resp.text)
+        }
+    }
+    logging.debug("http-roundtrip-log=\n%s", json.dumps(log, indent=2))
+    return
+
+
 def _parse_response(resp):
+    if ENABLE_LOGGING:
+        log_http_roundtrip(resp)
     if resp.status_code != 200:
-        return False, _parse_bad_response(resp)
-    return True, _parse_good_response(resp)
+        return False, parse_bad_response(resp)
+    return True, parse_good_response(resp)
 
 
-def _parse_good_response(resp):
+def parse_good_response(resp):
     j = resp.json()
-    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'data' in j.keys():
         return j['data']
     return dict()
 
 
-def _parse_bad_response(resp):
+def parse_bad_response(resp):
     j = resp.json()
-    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'meta' in j.keys() and \
             'error' in j['meta'].keys() and \
             'description' in j['meta']['error'].keys():
@@ -336,7 +363,7 @@ def _parse_bad_response(resp):
     return 'Unknown error'
 
 
-def _make_request(func, solace_config, path_array, json=None):
+def compose_path(path_array):
     if not type(path_array) is list:
         raise TypeError("argument 'path_array' is not an array but {}".format(type(path_array)))
     # ensure elements are 'url encoded'
@@ -347,8 +374,12 @@ def _make_request(func, solace_config, path_array, json=None):
             paths.append(path_elem.replace('/', '%2F'))
         else:
             paths.append(path_elem)
-    path = '/'.join(paths)
-    logging.debug("%s uri=%s", func, path)
+    return '/'.join(paths)
+
+
+def _make_request(func, solace_config, path_array, json=None):
+
+    path = compose_path(path_array)
 
     try:
         return _parse_response(

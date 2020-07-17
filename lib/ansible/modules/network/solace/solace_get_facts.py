@@ -171,7 +171,7 @@ def make_get_request(solace_config, path_array):
         return True, su.parse_good_response(resp), dict(resp.headers)
 
     except requests.exceptions.ConnectionError as e:
-        return False, str(e)
+        return False, str(e), dict()
 
 
 def addPathValue(dictionary, path_array, value):
@@ -201,7 +201,6 @@ def run_module():
     solace_task = SolaceGetFactsTask(module)
     ok, resp_or_facts = solace_task.get_facts()
     if not ok:
-        result.response = resp_or_facts
         module.fail_json(msg=resp_or_facts, **result)
 
     result['ansible_facts']['solace'] = resp_or_facts

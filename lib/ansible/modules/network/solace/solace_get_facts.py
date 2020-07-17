@@ -32,6 +32,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
+import requests
 
 DOCUMENTATION = '''
 ---
@@ -105,6 +106,10 @@ EXAMPLES = '''
       debug:
         msg: "api version={{ ansible_facts.solace.about.api.sempVersion }}"
 
+    - name: show server
+      debug:
+        msg: "server={{ ansible_facts.solace.about.Server }}"
+
     - name: show msg vpns
       debug:
         msg: "msg vpns={{ ansible_facts.solace.about.user.msgVpns }}"
@@ -135,13 +140,38 @@ class SolaceGetFactsTask(su.SolaceTask):
         ]
 
         for path in paths:
-            ok, resp = su.make_get_request(self.solace_config, [su.SEMP_V2_CONFIG] + path)
+            ok, resp, headers = make_get_request(self.solace_config, [su.SEMP_V2_CONFIG] + path)
             if ok:
                 addPathValue(facts, path, resp)
             else:
                 return False, resp
 
+        facts['about']['Server'] = headers['Server']
+
         return True, facts
+
+
+def make_get_request(solace_config, path_array):
+
+    path = su.compose_path(path_array)
+
+    try:
+        resp = requests.get(
+                    solace_config.vmr_url + path,
+                    json=None,
+                    auth=solace_config.vmr_auth,
+                    timeout=solace_config.vmr_timeout,
+                    headers={'x-broker-name': solace_config.x_broker},
+                    params=None
+        )
+        if su.ENABLE_LOGGING:
+            su.log_http_roundtrip(resp)
+        if resp.status_code != 200:
+            return False, su.parse_bad_response(resp), dict(resp.headers)
+        return True, su.parse_good_response(resp), dict(resp.headers)
+
+    except requests.exceptions.ConnectionError as e:
+        return False, str(e)
 
 
 def addPathValue(dictionary, path_array, value):

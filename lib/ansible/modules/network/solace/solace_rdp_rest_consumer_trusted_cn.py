@@ -35,9 +35,9 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_rdp_restConsumer_trusted_common_name
+module: solace_rdp_restConsumer_trusted_cn
 
-short_description: Configure a trusted common name on a rest consumer of an RDP.
+short_description: Configure a trusted common name object on a rest consumer of an RDP.
 
 description:
   - "Allows addition, removal and configuration of trusted common name objects for a rest consumer of an RDP."
@@ -88,7 +88,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 
@@ -100,7 +100,7 @@ author:
 
 EXAMPLES = '''
     - name: Add the TLS Trusted Common Name
-      solace_rdp_restConsumer_trustedCommonName:
+      solace_rdp_restConsumer_trusted_cn:
         secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
         username: "{{ deployment.solaceBrokerSempv2.username }}"
         password: "{{ deployment.solaceBrokerSempv2.password }}"
@@ -169,23 +169,16 @@ class SolaceRdpRestConsumerTrustedCommonNameTask(su.SolaceTask):
 
 def run_module():
     """Entrypoint to module"""
+
     module_args = dict(
         rdp_name=dict(type='str', required=True),
         rest_consumer_name=dict(type='str', required=True),
         name=dict(type='str', required=True),
         msg_vpn=dict(type='str', required=True),
-        host=dict(type='str', default='localhost'),
-        port=dict(type='int', default=8080),
-        secure_connection=dict(type='bool', default=False),
-        username=dict(type='str', default='admin'),
-        password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='30', require=False),
-        x_broker=dict(type='str', default='')
     )
+
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec=su.compose_module_args(module_args),
         supports_check_mode=True
     )
 

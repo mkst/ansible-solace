@@ -34,6 +34,7 @@ import logging
 import json
 import os
 from distutils.util import strtobool
+from ansible.errors import AnsibleError
 
 try:
     import requests
@@ -51,10 +52,10 @@ MSG_VPNS = 'msgVpns'
 TOPIC_ENDPOINTS = 'topicEndpoints'
 ACL_PROFILES = 'aclProfiles'
 ACL_PROFILES_CLIENT_CONNECT_EXCEPTIONS = 'clientConnectExceptions'
-ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
-ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
-ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
-ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
+# ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
+# ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
+# ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
+# ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
 CLIENT_PROFILES = 'clientProfiles'
 CLIENT_USERNAMES = 'clientUsernames'
 DMR_BRIDGES = 'dmrBridges'
@@ -232,6 +233,25 @@ class SolaceTask:
     def crud_args(self):
         return self.get_args() + [self.lookup_item()]
 
+    def lookup_semp_version(self, semp_version):
+        raise AnsibleError("argument 'semp_version' not supported by module: {}. implement 'lookup_semp_version()' in module.".format(self.module._name))
+
+    def get_semp_version_key(self, lookup_dict, lookup_vmr_semp_version, lookup_key):
+        try:
+            v = float(lookup_vmr_semp_version)
+        except ValueError:
+            raise ValueError("semp_version: '{}' cannot be converted to a float. see 'solace_get_facts' for examples of how to pass in the 'semp_version' argument.".format(lookup_vmr_semp_version))
+        ok, version_key = self.lookup_semp_version(v)
+        if not ok:
+            raise ValueError("unsupported semp_version: '{}'".format(lookup_vmr_semp_version))
+
+        if version_key not in lookup_dict:
+            raise ValueError("version_key: '{}' not found in lookup_dict: {}".format(version_key, json.dumps(lookup_dict)))
+        version_lookup_dict = lookup_dict[version_key]
+        if lookup_key not in version_lookup_dict:
+            raise ValueError("lookup_key: '{}' not found in lookup_dict['{}']: '{}'".format(lookup_key, version_key, json.dumps(version_lookup_dict)))
+        return version_lookup_dict[lookup_key]
+
 
 def compose_module_args(module_args):
     _module_args = dict(
@@ -248,15 +268,6 @@ def compose_module_args(module_args):
     )
     _module_args.update(module_args)
     return _module_args
-
-
-def get_semp_version_key(version_key, lookup_key, lookup_dict):
-    if version_key not in lookup_dict:
-        raise ValueError("version_key: '{}' not found in lookup_dict: {}".format(version_key, json.dumps(lookup_dict)))
-    version_lookup_dict = lookup_dict[version_key]
-    if lookup_key not in version_lookup_dict:
-        raise ValueError("lookup_key: '{}' not found in lookup_dict['{}']: '{}'".format(lookup_key, version_key, json.dumps(version_lookup_dict)))
-    return version_lookup_dict[lookup_key]
 
 
 def merge_dicts(*argv):

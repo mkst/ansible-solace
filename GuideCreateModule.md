@@ -1,6 +1,6 @@
 # Guide to Creating a Module
 
-This guide walks through how new Sempv2 requests are implemented using the framework.
+This guide explains how to implement new modules using the framework.
 
 1) Duplicate an existing module
    * path: `lib/ansible/modules/network/solace`
@@ -17,6 +17,7 @@ This guide walks through how new Sempv2 requests are implemented using the frame
     ````
 
 2) Adjust the code for the new module
+   - check whether the module needs to use the API version to switch behaviour/params. See [Supporting Multiple API Versions](#supporting-multiple-api-versions).
 
 3) Test the new module
 
@@ -40,6 +41,7 @@ Provide at a minimum:
 * short_description
 * description
   - add the link to the Sempv2 Resource.
+  - add api versions supported if applicable. Example:  [solace_acl_publish_topic_exception](lib/ansible/modules/network/solace/solace_acl_publish_topic_exception.py).
 * options
   - copy the common options and add the module specific options.
 * author
@@ -222,23 +224,23 @@ Example:
 
 
 ````python
+# Module specific parameters
 module_args = dict(
     # always required
     name=dict(type='str', required=True),
-    # Resource specific parameters
-    rdp_name=dict(type='str', required=True),
+    # example module specific parameters
     msg_vpn=dict(type='str', required=True),
-    # framework parameters
-    # do not change from here
-    host=dict(type='str', default='localhost'),
-    port=dict(type='int', default=8080),
-    secure_connection=dict(type='bool', default=False),
-    username=dict(type='str', default='admin'),
-    password=dict(type='str', default='admin', no_log=True),
-    settings=dict(type='dict', require=False),
-    state=dict(default='present', choices=['absent', 'present']),
-    timeout=dict(default='30', require=False),
-    x_broker=dict(type='str', default='')
+    acl_profile_name=dict(type='str', required=True),
+    topic_syntax=dict(type='str', default='smf'),
+    # in this example, make the semp_version required
+    semp_version=dict(type='str', required=True)
+)
+
+module = AnsibleModule(
+    # adds the common module arguments as well
+    # e.g. host, port, etc.
+    argument_spec=su.compose_module_args(module_args),
+    supports_check_mode=True
 )
 ````
 
@@ -250,6 +252,64 @@ Example:
 ````python
     solace_task = SolaceRdpQueueBindingTask(module)
 ````
+
+## Supporting Multiple API Versions
+
+See the following modules for examples:
+- [solace_acl_publish_topic_exception](lib/ansible/modules/network/solace/solace_acl_publish_topic_exception.py).
+- [solace_acl_subscribe_topic_exception](lib/ansible/modules/network/solace/solace_acl_subscribe_topic_exception.py).
+
+In the playbook, use `solace_get_facts`.
+See examples: [Solace Get Facts Playbook](examples/solace_get_facts.playbook.yml) & [ACL Profile Playbook](examples/solace_acl_profile.playbook.yml). 
+
+Create a lookup structure:
+
+````python
+KEY_LOOKUP_ITEM_KEY = "LOOKUP_ITEM_KEY"
+  KEY_URI_SUBSCR_EX = "URI_SUBSCR_EX"
+  KEY_TOPIC_SYNTAX_KEY = "TOPIC_SYNTAX_KEY"
+  SEMP_VERSION_KEY_LOOKUP = {
+      '2.13': {
+          KEY_LOOKUP_ITEM_KEY: 'subscribeExceptionTopic',
+          KEY_URI_SUBSCR_EX: 'subscribeExceptions',
+          KEY_TOPIC_SYNTAX_KEY: 'topicSyntax'
+      },
+      '2.14': {
+          KEY_LOOKUP_ITEM_KEY: 'subscribeTopicException',
+          KEY_URI_SUBSCR_EX: 'subscribeTopicExceptions',
+          KEY_TOPIC_SYNTAX_KEY: 'subscribeTopicExceptionSyntax'
+      }
+  }
+````
+
+Implement version 'switch' function:
+
+````python
+def lookup_semp_version(self, semp_version):
+    if semp_version <= 2.13:
+        return True, '2.13'
+    elif semp_version >= 2.14:
+        return True, '2.14'
+    return False, ''
+
+````
+
+Use `self.get_semp_version_key` function.
+
+Example:
+
+````python
+def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
+    # vmr_sempVersion <= "2.13" : GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions/{topicSyntax},{subscribeExceptionTopic}
+    # vmr_sempVersion >= "2.14": GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeTopicExceptions/{subscribeTopicExceptionSyntax},{subscribeTopicException}
+    uri_subscr_ex = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
+    lookup_item_key = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_LOOKUP_ITEM_KEY)
+
+    ex_uri = ','.join([topic_syntax, lookup_item_value])
+    path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, uri_subscr_ex, ex_uri]
+    return su.get_configuration(solace_config, path_array, lookup_item_key)
+````
+
 
 ---
 The End.

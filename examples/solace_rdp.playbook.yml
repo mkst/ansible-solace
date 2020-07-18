@@ -60,7 +60,7 @@
         state: present
 
     - name: Add the TLS Trusted Common Name
-      solace_rdp_rest_consumer_trusted_common_name:
+      solace_rdp_rest_consumer_trusted_cn:
         secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
         username: "{{ deployment.solaceBrokerSempv2.username }}"
         password: "{{ deployment.solaceBrokerSempv2.password }}"

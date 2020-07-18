@@ -1,98 +1,125 @@
+-
+  name: Create / Update ACL Profile with subscr & pub topic & client connect exceptions
 
-# TODO: update this 
+  hosts: "{{ brokers }}"
 
-- name: Playbook to add a ACL profile named 'new_acl'
-  hosts: localhost
-  vars:
-    msg_vpn: default
-    acl_profile: new_acl
-    client_address: 192.168.1.64/26
-    publish_topic: topic/#
+  module_defaults:
+    solace_get_facts:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+    solace_acl_profile:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+    solace_acl_subscribe_topic_exception:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+    solace_acl_publish_topic_exception:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+    solace_acl_client_connect_exception:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
+
   tasks:
 
-  - name: Remove ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Get Solace Facts
+      solace_get_facts:
 
-  - name: Add ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      settings:
-        clientConnectDefaultAction: allow
+    - name: Delete ACL Profile
+      solace_acl_profile:
+        name: "test_ansible_solace"
+        state: absent
 
-  - name: Update ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      settings:
-        publishTopicDefaultAction: allow
+    - name: Create ACL Profile
+      solace_acl_profile:
+        name: "test_ansible_solace"
+        settings:
+          clientConnectDefaultAction: "disallow"
+          publishTopicDefaultAction: "disallow"
+          subscribeTopicDefaultAction: "disallow"
+        state: present
 
-  - name: Remove ACL Client Connect Exception
-    solace_acl_connect:
-      name: "{{client_address}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Update ACL Profile
+      solace_acl_profile:
+        name: "test_ansible_solace"
+        settings:
+          clientConnectDefaultAction: "allow"
+        state: present
 
-  - name: Add ACL Client Connect Exception
-    solace_acl_connect:
-      name: "{{client_address}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
+    - name: Add Subscribe Topic Exceptions to ACL Profile
+      solace_acl_subscribe_topic_exception:
+        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
+        acl_profile_name: "test_ansible_solace"
+        name: "test/ansible/solace"
+        state: present
 
-  - name: Remove MQTT ACL Publish Exception
-    solace_acl_publish:
-      name: "{{publish_topic}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Add Publish Topic Exceptions to ACL Profile
+      solace_acl_publish_topic_exception:
+        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
+        acl_profile_name: "test_ansible_solace"
+        name: "test/ansible/solace"
+        state: present
 
-  - name: Add ACL MQTT Publish Exception
-    solace_acl_publish:
-      name: "{{publish_topic}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      topic_syntax: mqtt
+    - name: Add Client Connect Exception to ACL Profile
+      solace_acl_client_connect_exception:
+        acl_profile_name: "test_ansible_solace"
+        name: "192.168.1.64/26"
+        state: present
 
-  - name: Remove ACL Publish Exception
-    solace_acl_publish:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    # remove everything again
 
-  - name: Add ACL Publish Exception
-    solace_acl_publish:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
+    # - debug:
+    #     msg: "Not removing objects - Ending play"
+    # - meta: end_play
 
-  - name: Remove MQTT ACL Subscribe Exception
-    solace_acl_subscribe:
-      name: "{{publish_topic}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Remove Client Connect Exception from ACL Profile
+      solace_acl_client_connect_exception:
+        acl_profile_name: "test_ansible_solace"
+        name: "192.168.1.64/26"
+        state: absent
 
-  - name: Add ACL MQTT Subscribe Exception
-    solace_acl_subscribe:
-      name: "{{publish_topic}}"
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      topic_syntax: mqtt
+    - name: Delete Subscribe Topic Exceptions from ACL Profile
+      solace_acl_subscribe_topic_exception:
+        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
+        acl_profile_name: "test_ansible_solace"
+        name: "test/ansible/solace"
+        state: absent
 
-  - name: Remove ACL Subscribe Exception
-    solace_acl_subscribe:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Delete Publish Topic Exceptions from ACL Profile
+      solace_acl_publish_topic_exception:
+        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
+        acl_profile_name: "test_ansible_solace"
+        name: "test/ansible/solace"
+        state: absent
 
-  - name: Add ACL Subscribe Exception
-    solace_acl_subscribe:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
+    - name: Delete ACL Profile
+      solace_acl_profile:
+        name: "test_ansible_solace"
+        state: absent
+
+###
+# The End.

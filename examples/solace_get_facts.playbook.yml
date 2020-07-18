@@ -1,0 +1,48 @@
+-
+  name: Get Facts
+
+  hosts: "{{ brokers }}"
+
+  module_defaults:
+    solace_get_facts:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+
+  tasks:
+
+    - name: Show host
+      debug:
+        msg:
+          - "inventory_hostname={{ inventory_hostname }}"
+
+    - name: Get Solace Facts
+      solace_get_facts:
+
+      register: result
+
+    - name: show results
+      debug:
+        msg: "solace_get_facts.result={{ result.ansible_facts }}"
+
+    - name: show ansible_facts.solace
+      debug:
+        msg: "ansible_facts.solace={{ ansible_facts.solace }}"
+
+    - name: show API version
+      debug:
+        msg: "api version={{ ansible_facts.solace.about.api.sempVersion }}"
+
+    - name: show server
+      debug:
+        msg: "server={{ ansible_facts.solace.about.Server }}"
+
+    - name: show msg vpns
+      debug:
+        msg: "msg vpns={{ ansible_facts.solace.about.user.msgVpns }}"
+
+###
+# The End.

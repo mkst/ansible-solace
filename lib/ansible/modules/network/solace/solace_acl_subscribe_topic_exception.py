@@ -32,8 +32,6 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 import ansible.module_utils.network.solace.solace_utils as su
 from ansible.module_utils.basic import AnsibleModule
-from ansible.errors import AnsibleError
-import json
 
 DOCUMENTATION = '''
 ---
@@ -43,7 +41,7 @@ short_description: Configure a subscribe topic exception object for an ACL Profi
 
 description:
   - "Allows addition and removal of a subscribe topic exception object for an ACL Profile."
-  - "Supported versions: [ <2.14, >=2.14 ]."
+  - "Supported versions: [ <=2.13, >=2.14 ]."
   - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeTopicException."
   - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeException."
 
@@ -159,55 +157,53 @@ class SolaceACLSubscribeTopicExceptionTask(su.SolaceTask):
         }
     }
 
-    def get_semp_version_key(self, vmr_sempVersion, key):
-        if vmr_sempVersion <= "2.13":
-            version_key = '2.13'
-        elif vmr_sempVersion >= "2.14":
-            version_key = "2.14"
-        else:
-            raise ValueError("unsupported semp_version: '{}'".format(vmr_sempVersion))
-        return su.get_semp_version_key(version_key, key, self.SEMP_VERSION_KEY_LOOKUP)
-
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
     def get_args(self):
         return [self.module.params['msg_vpn'], self.module.params['acl_profile_name'], self.module.params['topic_syntax']]
 
+    def lookup_semp_version(self, semp_version):
+        if semp_version <= 2.13:
+            return True, '2.13'
+        elif semp_version >= 2.14:
+            return True, '2.14'
+        return False, ''
+
     def lookup_item(self):
         return self.module.params['name']
 
     def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
-        # vmr_sempVersion < "2.14" : GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions/{topicSyntax},{subscribeExceptionTopic}
+        # vmr_sempVersion <= "2.13" : GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions/{topicSyntax},{subscribeExceptionTopic}
         # vmr_sempVersion >= "2.14": GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeTopicExceptions/{subscribeTopicExceptionSyntax},{subscribeTopicException}
-        uri_subscr_ex = self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
-        lookup_item_key = self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_LOOKUP_ITEM_KEY)
+        uri_subscr_ex = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
+        lookup_item_key = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_LOOKUP_ITEM_KEY)
 
         ex_uri = ','.join([topic_syntax, lookup_item_value])
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, uri_subscr_ex, ex_uri]
         return su.get_configuration(solace_config, path_array, lookup_item_key)
 
     def create_func(self, solace_config, vpn, acl_profile_name, topic_syntax, subscribe_topic_exception, settings=None):
-        # vmr_sempVersion: <2.14 : POST /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions
+        # vmr_sempVersion: <=2.13 : POST /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions
         # vmr_sempVersion: >=2.14: POST /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeTopicExceptions
         defaults = {
             'msgVpnName': vpn,
             'aclProfileName': acl_profile_name,
-            self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_TOPIC_SYNTAX_KEY): topic_syntax
+            self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_TOPIC_SYNTAX_KEY): topic_syntax
         }
         mandatory = {
-            self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_LOOKUP_ITEM_KEY): subscribe_topic_exception
+            self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_LOOKUP_ITEM_KEY): subscribe_topic_exception
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        uri_subscr_ex = self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
+        uri_subscr_ex = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, uri_subscr_ex]
         return su.make_post_request(solace_config, path_array, data)
 
     def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
-        # vmr_sempVersion: <2.14 : DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions/{topicSyntax},{subscribeExceptionTopic}
+        # vmr_sempVersion: <=2.13 : DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeExceptions/{topicSyntax},{subscribeExceptionTopic}
         # vmr_sempVersion: >=2.14: DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeTopicExceptions/{subscribeTopicExceptionSyntax},{subscribeTopicException}
         ex_uri = ",".join([topic_syntax, lookup_item_value])
-        uri_subscr_ex = self.get_semp_version_key(solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
+        uri_subscr_ex = self.get_semp_version_key(self.SEMP_VERSION_KEY_LOOKUP, solace_config.vmr_sempVersion, self.KEY_URI_SUBSCR_EX)
         path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, uri_subscr_ex, ex_uri]
         return su.make_delete_request(solace_config, path_array)
 

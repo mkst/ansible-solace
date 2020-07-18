@@ -35,23 +35,20 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_link_remote_address
+module: solace_dmr_cluster_link
 
-short_description: Configure a remote address object on a DMR cluster link.
+short_description: Configure a link object on a DMR cluster.
 
 description:
-  - "Allows addition, removal and configuration of remote address objects on a DRM cluster link."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkRemoteAddress."
+  - "Allows addition, removal and configuration of link objects on a DMR cluster."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLink."
 
 options:
   name:
-    description: The FQDN or IP address (and optional port) of the remote node. Maps to 'remoteAddress' in the API.
+    description: The name of the node at the remote end of the Link. Maps to 'remoteNodeName' in the API.
     required: true
   dmr:
-    description: The DMR cluster name. Maps to 'dmrClusterName' in the API.
-    required: true
-  remote_node_name:
-    description: The remote node name. Maps to 'remoteNodeName' in the API.
+    description: The name of the DMR cluster. Maps to 'dmrClusterName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -88,7 +85,6 @@ options:
     description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
-
 author:
   - Mark Street (mkst@protonmail.com)
   - Swen-Helge Huber (swen-helge.huber@solace.com)
@@ -96,19 +92,22 @@ author:
 '''
 
 EXAMPLES = '''
-  - name: Remove 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
-      name: 192.168.0.34
-      remote_node_name: remoteNode
+  - name: Remove 'remoteNode' DMR Link
+    solace_dmr_cluster_link:
+      name: remoteNode
       dmr: foo
       state: absent
 
-  - name: Add 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
-      name: 192.168.0.34
-      remote_node_name: remoteNode
+  - name: Add 'remoteNode' DMR Link
+    solace_dmr_cluster_link:
+      name: remoteNode
       dmr: foo
       state: present
+      settings:
+        enabled: false
+        authenticationBasicPassword: secret_password
+        span: internal
+        initiator: local
 '''
 
 RETURN = '''
@@ -118,40 +117,43 @@ response:
 '''
 
 
-class SolaceLinkRemoteAddressTask(su.SolaceTask):
+class SolaceDMRLinkTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'remoteAddress'
+    LOOKUP_ITEM_KEY = 'remoteNodeName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def get_args(self):
-        return [self.module.params['dmr'], self.module.params['remote_node_name']]
-
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, dmr, link, lookup_item_value):
-        # GET /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+    def get_args(self):
+        return [self.module.params['dmr']]
+
+    def get_func(self, solace_config, dmr, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, dmr, link, address, settings=None):
-        # POST /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses
+    def create_func(self, solace_config, dmr, link, settings=None):
+        """Create a DMR Cluster"""
         defaults = {
-            'dmrClusterName': dmr,
-            'remoteNodeName': link
+            'dmrClusterName': dmr
         }
         mandatory = {
-            'remoteAddress': address
+            'remoteNodeName': link
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES]
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS]
         return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, dmr, link, lookup_item_value):
-        # DELETE /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+    def update_func(self, solace_config, dmr, lookup_item_value, settings):
+        """Update an existing VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
+
+    def delete_func(self, solace_config, dmr, lookup_item_value):
+        """Delete a VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -160,7 +162,6 @@ def run_module():
     module_args = dict(
         name=dict(type='str', required=True),
         dmr=dict(type='str', required=True),
-        remote_node_name=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -170,7 +171,6 @@ def run_module():
         state=dict(default='present', choices=['absent', 'present']),
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
-
     )
 
     module = AnsibleModule(
@@ -178,7 +178,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_task = SolaceLinkRemoteAddressTask(module)
+    solace_task = SolaceDMRLinkTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

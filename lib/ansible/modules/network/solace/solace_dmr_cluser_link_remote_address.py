@@ -35,23 +35,23 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_link_trusted_cn
+module: solace_dmr_cluster_link_remote_address
 
-short_description: Configure a trusted common name object on a DMR cluster link.
+short_description: Configure a remote address object on a DMR cluster link.
 
 description:
-  - "Allows addition, removal and configuration of trusted common name objects on DMR cluster links."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkTlsTrustedCommonName."
+  - "Allows addition, removal and configuration of remote address objects on a DRM cluster link."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkRemoteAddress."
 
 options:
   name:
-    description: The expected trusted common name of the remote certificate. Maps to 'tlsTrustedCommonName' in the API.
+    description: The FQDN or IP address (and optional port) of the remote node. Maps to 'remoteAddress' in the API.
     required: true
   dmr:
-    description: The name of the DMR cluster. Maps to 'dmrClusterName' in the API.
+    description: The DMR cluster name. Maps to 'dmrClusterName' in the API.
     required: true
   remote_node_name:
-    description: The name of the remote node. Maps to 'remoteNodeName' in the API.
+    description: The remote node name. Maps to 'remoteNodeName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -96,16 +96,16 @@ author:
 '''
 
 EXAMPLES = '''
-  - name: Remove 'remoteNode' DMR Link Trusted CN
-    solace_link_trusted_cn:
-      name: "*.messaging.solace.cloud"
+  - name: Remove 'remoteNode' DMR Link Remote address
+    solace_dmr_cluster_link_remote_address:
+      name: 192.168.0.34
       remote_node_name: remoteNode
       dmr: foo
       state: absent
 
-  - name: Add 'remoteNode' DMR Link Trusted CN
-    solace_link_trusted_cn:
-      name: "*.messaging.solace.cloud"
+  - name: Add 'remoteNode' DMR Link Remote address
+    solace_dmr_cluster_link_remote_address:
+      name: 192.168.0.34
       remote_node_name: remoteNode
       dmr: foo
       state: present
@@ -118,39 +118,40 @@ response:
 '''
 
 
-class SolaceLinkTrustedCNTask(su.SolaceTask):
+class SolaceLinkRemoteAddressTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'tlsTrustedCommonName'
+    LOOKUP_ITEM_KEY = 'remoteAddress'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def lookup_item(self):
-        return self.module.params['name']
-
     def get_args(self):
         return [self.module.params['dmr'], self.module.params['remote_node_name']]
 
+    def lookup_item(self):
+        return self.module.params['name']
+
     def get_func(self, solace_config, dmr, link, lookup_item_value):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+        # GET /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, dmr, link, trusted_cn, settings=None):
-        """Create a DMR Cluster"""
+    def create_func(self, solace_config, dmr, link, address, settings=None):
+        # POST /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses
         defaults = {
             'dmrClusterName': dmr,
             'remoteNodeName': link
         }
         mandatory = {
-            'tlsTrustedCommonName': trusted_cn
+            'remoteAddress': address
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES]
         return su.make_post_request(solace_config, path_array, data)
 
     def delete_func(self, solace_config, dmr, link, lookup_item_value):
-        """Delete a VPN"""
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+        # DELETE /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -169,6 +170,7 @@ def run_module():
         state=dict(default='present', choices=['absent', 'present']),
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
+
     )
 
     module = AnsibleModule(
@@ -176,7 +178,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_task = SolaceLinkTrustedCNTask(module)
+    solace_task = SolaceLinkRemoteAddressTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

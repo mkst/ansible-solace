@@ -35,17 +35,23 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_dmr
+module: solace_dmr_cluster_link_trusted_cn
 
-short_description: Configure a DMR cluster objects.
+short_description: Configure a trusted common name object on a DMR cluster link.
 
 description:
-  - "Allows addition, removal and configuration of DMR cluster objects on Solace Brokers in an idempotent manner."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster."
+  - "Allows addition, removal and configuration of trusted common name objects on DMR cluster links."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkTlsTrustedCommonName."
 
 options:
   name:
-    description: Name of the DMR cluster. Maps to 'dmrClusterName' in the API.
+    description: The expected trusted common name of the remote certificate. Maps to 'tlsTrustedCommonName' in the API.
+    required: true
+  dmr:
+    description: The name of the DMR cluster. Maps to 'dmrClusterName' in the API.
+    required: true
+  remote_node_name:
+    description: The name of the remote node. Maps to 'remoteNodeName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -82,7 +88,6 @@ options:
     description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
-
 author:
   - Mark Street (mkst@protonmail.com)
   - Swen-Helge Huber (swen-helge.huber@solace.com)
@@ -90,21 +95,19 @@ author:
 '''
 
 EXAMPLES = '''
-# Create a DMR Cluster with default settings
-- name: Create DMR Cluster foo
-  solace_dmr:
-    name: foo
-# Ensure a DMR Cluster called bar does not exist
-- name: Remove DMR Cluster bar
-  solace_dmr:
-    name: bar
-    state: absent
-# Set specific DMR Cluster setting on foo
-- name: Set tlsServerCertMaxChainDepth to 5 on DMR CLuster foo
-  solace_dmr:
-    name: foo
-    settings:
-      tlsServerCertMaxChainDepth: 5
+  - name: Remove 'remoteNode' DMR Link Trusted CN
+    solace_dmr_cluster_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      remote_node_name: remoteNode
+      dmr: foo
+      state: absent
+
+  - name: Add 'remoteNode' DMR Link Trusted CN
+    solace_dmr_cluster_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      remote_node_name: remoteNode
+      dmr: foo
+      state: present
 '''
 
 RETURN = '''
@@ -114,9 +117,9 @@ response:
 '''
 
 
-class SolaceDMRClusterTask(su.SolaceTask):
+class SolaceLinkTrustedCNTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'dmrClusterName'
+    LOOKUP_ITEM_KEY = 'tlsTrustedCommonName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -125,32 +128,28 @@ class SolaceDMRClusterTask(su.SolaceTask):
         return self.module.params['name']
 
     def get_args(self):
-        return []
+        return [self.module.params['dmr'], self.module.params['remote_node_name']]
 
-    def get_func(self, solace_config, lookup_item_value):
-        # GET /dmrClusters/{dmrClusterName}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+    def get_func(self, solace_config, dmr, link, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, dmr, settings=None):
+    def create_func(self, solace_config, dmr, link, trusted_cn, settings=None):
         """Create a DMR Cluster"""
         defaults = {
-            'enabled': True,
-            'authenticationBasicPassword': solace_config.vmr_auth[1]
+            'dmrClusterName': dmr,
+            'remoteNodeName': link
         }
         mandatory = {
-            'dmrClusterName': dmr
+            'tlsTrustedCommonName': trusted_cn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS]
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
         return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, lookup_item_value, settings):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
-        return su.make_patch_request(solace_config, path_array, settings)
-
-    def delete_func(self, solace_config, lookup_item_value):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+    def delete_func(self, solace_config, dmr, link, lookup_item_value):
+        """Delete a VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -158,6 +157,8 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
+        dmr=dict(type='str', required=True),
+        remote_node_name=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -167,7 +168,6 @@ def run_module():
         state=dict(default='present', choices=['absent', 'present']),
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
-
     )
 
     module = AnsibleModule(
@@ -175,7 +175,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_task = SolaceDMRClusterTask(module)
+    solace_task = SolaceLinkTrustedCNTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

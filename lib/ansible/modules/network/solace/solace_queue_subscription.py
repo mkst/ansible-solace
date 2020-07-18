@@ -97,7 +97,7 @@ author:
 
 EXAMPLES = '''
     - name: Create subscription on queues
-      solace_subscription:
+      solace_queue_subscription:
         secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
         username: "{{ deployment.solaceBrokerSempv2.username }}"
         password: "{{ deployment.solaceBrokerSempv2.password }}"

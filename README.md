@@ -189,7 +189,7 @@ Status of the `solace_*` modules:
 
 # Enhancements
 
-[See Potential Enhancements](./OpenIssues.md).
+[See Potential Enhancements](./Enhancements.md).
 
 ---
 The End.

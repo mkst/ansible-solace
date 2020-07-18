@@ -36,7 +36,7 @@ Usage:
       x_broker: "{{ x_broker | default() }}"
 ```
 
-## Modules
+## Modules
 
 ### Create
 

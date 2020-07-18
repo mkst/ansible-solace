@@ -15,6 +15,16 @@
     - solace_dmr_cluster_link_remote_address
     - solace_dmr_cluster_link_trusted_cn
 
+#### Module: `solace_get_facts`
+
+Some modules require the Semp API version number to switch behaviour depending on the version.
+This module uses the /about/api resource to retrieve the version number and add it to `ansible_facts`.
+Subsequent modules can use the output stored in `ansible_facts`.
+See example playbooks:
+
+- [Solace Get Facts Playbook](examples/solace_get_facts.playbook.yml)
+- [ACL Profile Playbook](examples/solace_acl_profile.playbook.yml) 
+
 ### Removed Modules
 
     - solace_acl_publish

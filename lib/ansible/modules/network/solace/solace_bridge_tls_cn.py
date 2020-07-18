@@ -88,7 +88,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 

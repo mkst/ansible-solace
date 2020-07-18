@@ -26,10 +26,11 @@
 ################################################################################
 # usage: source set-ansible-env.sh
 #
-# Prepend ansible-solace path to ansible env vars
 
+export ANSIBLE_SOLACE_ENABLE_LOGGING=true
 #export ANSIBLE_PYTHON_INTERPRETER=/usr/local/bin/python
 
+# Prepend ansible-solace path to ansible env vars
 export ANSIBLE_SOLACE_HOME=`pwd`/..
 if [[ -z $ANSIBLE_MODULE_UTILS ]]; then COLON=""; else COLON=":"; fi
 export ANSIBLE_MODULE_UTILS="$ANSIBLE_SOLACE_HOME/lib/ansible/module_utils$COLON$ANSIBLE_MODULE_UTILS"
@@ -38,11 +39,12 @@ export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/lib/ansible/modules$COLON$ANSIBLE_L
 
 clear
 echo
-echo "Prepending ansible-solace path to ansible env vars:"; echo
-echo "ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
-echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
-echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
-echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"
+echo "Ansible env vars:"; echo
+echo " - ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
+echo " - ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
+echo " - ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
+echo " - ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"
+echo " - ANSIBLE_SOLACE_ENABLE_LOGGING=$ANSIBLE_SOLACE_ENABLE_LOGGING"
 echo
 
 ###

@@ -35,25 +35,24 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_acl_publish
+module: solace_dmr_cluster_link_trusted_cn
 
-short_description: Configure a publish topic exception on an ACL Profile.
+short_description: Configure a trusted common name object on a DMR cluster link.
 
 description:
-  - "Allows addition and removal of publish topic exception(s) on an ACL Profile in an idempotent manner."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfilePublishTopicException."
+  - "Allows addition, removal and configuration of trusted common name objects on DMR cluster links."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkTlsTrustedCommonName."
 
 options:
   name:
-    description: The publish exception topic. Maps to 'publishTopicException' in the API.
+    description: The expected trusted common name of the remote certificate. Maps to 'tlsTrustedCommonName' in the API.
     required: true
-  acl_profile_name:
-    description: The ACL Profile.
+  dmr:
+    description: The name of the DMR cluster. Maps to 'dmrClusterName' in the API.
     required: true
-  topic_syntax:
-    description: The topic syntax.
-    required: false
-    default: "smf"
+  remote_node_name:
+    description: The name of the remote node. Maps to 'remoteNodeName' in the API.
+    required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
     required: false
@@ -69,9 +68,6 @@ options:
     description: Management port of Solace Broker.
     required: false
     default: 8080
-  msg_vpn:
-    description: The message vpn.
-    required: true
   secure_connection:
     description: If true, use https rather than http for querying.
     required: false
@@ -89,9 +85,8 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
-
 
 author:
   - Mark Street (mkst@protonmail.com)
@@ -100,18 +95,19 @@ author:
 '''
 
 EXAMPLES = '''
-  - name: Remove ACL Publish Exception
-    solace_acl_publish:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
+  - name: Remove 'remoteNode' DMR Link Trusted CN
+    solace_dmr_cluster_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      remote_node_name: remoteNode
+      dmr: foo
       state: absent
 
-  - name: Add ACL Publish Exception
-    solace_acl_publish:
-      name: events/>
-      acl_profile_name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
+  - name: Add 'remoteNode' DMR Link Trusted CN
+    solace_dmr_cluster_link_trusted_cn:
+      name: "*.messaging.solace.cloud"
+      remote_node_name: remoteNode
+      dmr: foo
+      state: present
 '''
 
 RETURN = '''
@@ -121,42 +117,39 @@ response:
 '''
 
 
-class SolaceACLPublishExceptionTask(su.SolaceTask):
+class SolaceLinkTrustedCNTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'publishTopicException'
+    LOOKUP_ITEM_KEY = 'tlsTrustedCommonName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def get_args(self):
-        return [self.module.params['msg_vpn'],
-                self.module.params['acl_profile_name'],
-                self.module.params['topic_syntax']]
-
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
-        ex_uri = ','.join([topic_syntax, lookup_item_value])
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS, ex_uri]
+    def get_args(self):
+        return [self.module.params['dmr'], self.module.params['remote_node_name']]
+
+    def get_func(self, solace_config, dmr, link, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, vpn, acl_profile_name, topic_syntax, publish_topic_exception, settings=None):
+    def create_func(self, solace_config, dmr, link, trusted_cn, settings=None):
+        """Create a DMR Cluster"""
         defaults = {
-            'msgVpnName': vpn,
-            'aclProfileName': acl_profile_name,
-            'publishTopicExceptionSyntax': topic_syntax
+            'dmrClusterName': dmr,
+            'remoteNodeName': link
         }
         mandatory = {
-            'publishTopicException': publish_topic_exception
+            'tlsTrustedCommonName': trusted_cn
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS]
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES]
         return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, vpn, acl_profile_name, topic_syntax, lookup_item_value):
-        ex_uri = ','.join([topic_syntax, lookup_item_value])
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, acl_profile_name, su.ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS, ex_uri]
+    def delete_func(self, solace_config, dmr, link, lookup_item_value):
+        """Delete a VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -164,9 +157,8 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
-        acl_profile_name=dict(type='str', required=True),
-        topic_syntax=dict(type='str', default='smf'),
+        dmr=dict(type='str', required=True),
+        remote_node_name=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -177,12 +169,13 @@ def run_module():
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
     )
+
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    solace_task = SolaceACLPublishExceptionTask(module)
+    solace_task = SolaceLinkTrustedCNTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

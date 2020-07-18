@@ -11,6 +11,10 @@ source set-ansible-env.sh
 
 ````bash
 source unset-ansible-env.sh
+
+# or
+
+source unset-all.sh
 ````
 
 

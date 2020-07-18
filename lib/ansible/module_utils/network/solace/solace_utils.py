@@ -32,6 +32,9 @@ import re
 import traceback
 import logging
 import json
+import os
+from distutils.util import strtobool
+from ansible.errors import AnsibleError
 
 try:
     import requests
@@ -49,10 +52,10 @@ MSG_VPNS = 'msgVpns'
 TOPIC_ENDPOINTS = 'topicEndpoints'
 ACL_PROFILES = 'aclProfiles'
 ACL_PROFILES_CLIENT_CONNECT_EXCEPTIONS = 'clientConnectExceptions'
-ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
-ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
-ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
-ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
+# ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
+# ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
+# ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
+# ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
 CLIENT_PROFILES = 'clientProfiles'
 CLIENT_USERNAMES = 'clientUsernames'
 DMR_BRIDGES = 'dmrBridges'
@@ -79,20 +82,22 @@ TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 CERT_AUTHORITIES = 'certAuthorities'
 
 ################################################################################################
-# logging
+# initialize logging
 ENABLE_LOGGING = False  # False to disable
+enableLoggingEnvVal = os.getenv('ANSIBLE_SOLACE_ENABLE_LOGGING')
+if enableLoggingEnvVal is not None and enableLoggingEnvVal != '':
+    try:
+        ENABLE_LOGGING = bool(strtobool(enableLoggingEnvVal))
+    except ValueError:
+        raise ValueError("invalid value for env var: 'ANSIBLE_SOLACE_ENABLE_LOGGING={}'. use 'true' or 'false' instead.".format(enableLoggingEnvVal))
 
-
-def init_logging():
-    logging.basicConfig(filename='ansible_solace.log',
+if ENABLE_LOGGING:
+    logging.basicConfig(filename='ansible-solace.log',
                         level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s(): %(message)s')
     logging.info('Module start #############################################################################################')
-    return
 
-
-if ENABLE_LOGGING:
-    init_logging()
+################################################################################################
 
 
 class SolaceConfig(object):
@@ -104,12 +109,14 @@ class SolaceConfig(object):
                  vmr_auth,
                  vmr_secure=False,
                  vmr_timeout=1,
-                 x_broker=''):
+                 x_broker='',
+                 vmr_sempVersion=''):
         self.vmr_auth = vmr_auth
         self.vmr_timeout = float(vmr_timeout)
-
         self.vmr_url = ('https' if vmr_secure else 'http') + '://' + vmr_host + ':' + str(vmr_port)
         self.x_broker = x_broker
+        self.vmr_sempVersion = vmr_sempVersion
+        return
 
 
 class SolaceTask:
@@ -122,7 +129,8 @@ class SolaceTask:
             vmr_auth=(self.module.params['username'], self.module.params['password']),
             vmr_secure=self.module.params['secure_connection'],
             vmr_timeout=self.module.params['timeout'],
-            x_broker=self.module.params.get('x_broker', '')
+            x_broker=self.module.params.get('x_broker', ''),
+            vmr_sempVersion=self.module.params.get('semp_version', '')
         )
         return
 
@@ -225,8 +233,43 @@ class SolaceTask:
     def crud_args(self):
         return self.get_args() + [self.lookup_item()]
 
+    def lookup_semp_version(self, semp_version):
+        raise AnsibleError("argument 'semp_version' not supported by module: {}. implement 'lookup_semp_version()' in module.".format(self.module._name))
 
-# internal helper functions
+    def get_semp_version_key(self, lookup_dict, lookup_vmr_semp_version, lookup_key):
+        try:
+            v = float(lookup_vmr_semp_version)
+        except ValueError:
+            raise ValueError("semp_version: '{}' cannot be converted to a float. see 'solace_get_facts' for examples of how to pass in the 'semp_version' argument.".format(lookup_vmr_semp_version))
+        ok, version_key = self.lookup_semp_version(v)
+        if not ok:
+            raise ValueError("unsupported semp_version: '{}'".format(lookup_vmr_semp_version))
+
+        if version_key not in lookup_dict:
+            raise ValueError("version_key: '{}' not found in lookup_dict: {}".format(version_key, json.dumps(lookup_dict)))
+        version_lookup_dict = lookup_dict[version_key]
+        if lookup_key not in version_lookup_dict:
+            raise ValueError("lookup_key: '{}' not found in lookup_dict['{}']: '{}'".format(lookup_key, version_key, json.dumps(version_lookup_dict)))
+        return version_lookup_dict[lookup_key]
+
+
+def compose_module_args(module_args):
+    _module_args = dict(
+        host=dict(type='str', default='localhost'),
+        port=dict(type='int', default=8080),
+        secure_connection=dict(type='bool', default=False),
+        username=dict(type='str', default='admin'),
+        password=dict(type='str', default='admin', no_log=True),
+        settings=dict(type='dict', require=False),
+        state=dict(default='present', choices=['absent', 'present']),
+        timeout=dict(default='1', require=False),
+        x_broker=dict(type='str', default=''),
+        semp_version=dict(type='str', require=False)
+    )
+    _module_args.update(module_args)
+    return _module_args
+
+
 def merge_dicts(*argv):
     data = dict()
     for arg in argv:
@@ -238,6 +281,9 @@ def merge_dicts(*argv):
 def _build_config_dict(resp, key):
     if not type(resp) is dict:
         raise TypeError("argument 'resp' is not a 'dict' but {}. Hint: check you are using Sempv2 GET single item call and not a list of items.".format(type(resp)))
+    # wrong LOOKUP_ITEM_KEY in module
+    if key not in resp:
+        raise ValueError("wrong 'LOOKUP_ITEM_KEY' in module. semp GET response does not contain key='{}'".format(key))
     # resp is a single dict, not an array
     # return an array with 1 element
     d = dict()
@@ -275,23 +321,50 @@ def get_configuration(solace_config, path_array, key):
 
 
 # request/response handling
+
+def log_http_roundtrip(resp):
+    # body is either empty or of type 'bytes'
+    if hasattr(resp.request, 'body') and resp.request.body is not None:
+        body = json.loads(resp.request.body.decode())
+    else:
+        body = "{}"
+
+    log = {
+        'request': {
+            'method': resp.request.method,
+            'url': resp.request.url,
+            'headers': dict(resp.request.headers),
+            'body': body
+        },
+        'response': {
+            'code': resp.status_code,
+            'reason': resp.reason,
+            'url': resp.url,
+            'headers': dict(resp.headers),
+            'body': json.loads(resp.text)
+        }
+    }
+    logging.debug("http-roundtrip-log=\n%s", json.dumps(log, indent=2))
+    return
+
+
 def _parse_response(resp):
+    if ENABLE_LOGGING:
+        log_http_roundtrip(resp)
     if resp.status_code != 200:
-        return False, _parse_bad_response(resp)
-    return True, _parse_good_response(resp)
+        return False, parse_bad_response(resp)
+    return True, parse_good_response(resp)
 
 
-def _parse_good_response(resp):
+def parse_good_response(resp):
     j = resp.json()
-    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'data' in j.keys():
         return j['data']
     return dict()
 
 
-def _parse_bad_response(resp):
+def parse_bad_response(resp):
     j = resp.json()
-    logging.debug("response=\n%s", json.dumps(j, indent=2))
     if 'meta' in j.keys() and \
             'error' in j['meta'].keys() and \
             'description' in j['meta']['error'].keys():
@@ -301,7 +374,7 @@ def _parse_bad_response(resp):
     return 'Unknown error'
 
 
-def _make_request(func, solace_config, path_array, json=None):
+def compose_path(path_array):
     if not type(path_array) is list:
         raise TypeError("argument 'path_array' is not an array but {}".format(type(path_array)))
     # ensure elements are 'url encoded'
@@ -312,8 +385,12 @@ def _make_request(func, solace_config, path_array, json=None):
             paths.append(path_elem.replace('/', '%2F'))
         else:
             paths.append(path_elem)
-    path = '/'.join(paths)
-    logging.debug("%s uri=%s", func, path)
+    return '/'.join(paths)
+
+
+def _make_request(func, solace_config, path_array, json=None):
+
+    path = compose_path(path_array)
 
     try:
         return _parse_response(

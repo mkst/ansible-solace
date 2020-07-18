@@ -35,23 +35,20 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_rdp_restConsumer_trusted_common_name
+module: solace_dmr_cluster_link
 
-short_description: Configure a trusted common name on a rest consumer of an RDP.
+short_description: Configure a link object on a DMR cluster.
 
 description:
-  - "Allows addition, removal and configuration of trusted common name objects for a rest consumer of an RDP."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/restDeliveryPoint/getMsgVpnRestDeliveryPointRestConsumerTlsTrustedCommonNames."
+  - "Allows addition, removal and configuration of link objects on a DMR cluster."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLink."
 
 options:
   name:
-    description: The expected trusted common name of the remote certificate. Maps to 'tlsTrustedCommonName' in the API.
+    description: The name of the node at the remote end of the Link. Maps to 'remoteNodeName' in the API.
     required: true
-  rdp_name:
-    description: The RDP name. Maps to 'restDeliveryPointName' in the API.
-    required: true
-  rest_consumer_name:
-    description: The Rest consumer name. Maps to 'restConsumerName' in the API.
+  dmr:
+    description: The name of the DMR cluster. Maps to 'dmrClusterName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -68,9 +65,6 @@ options:
     description: Management port of Solace Broker.
     required: false
     default: 8080
-  msg_vpn:
-    description: The message vpn.
-    required: true
   secure_connection:
     description: If true, use https rather than http for querying.
     required: false
@@ -88,9 +82,8 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
-
 
 author:
   - Mark Street (mkst@protonmail.com)
@@ -99,25 +92,22 @@ author:
 '''
 
 EXAMPLES = '''
-    - name: Add the TLS Trusted Common Name
-      solace_rdp_restConsumer_trustedCommonName:
-        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
-        username: "{{ deployment.solaceBrokerSempv2.username }}"
-        password: "{{ deployment.solaceBrokerSempv2.password }}"
-        host: "{{ deployment.solaceBrokerSempv2.host }}"
-        port: "{{ deployment.solaceBrokerSempv2.port }}"
-        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
-        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
-        rdp_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.name }}"
-        rest_consumer_name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.name }}"
-        name: "{{ deployment.azRDPFunction.brokerConfig.rdp.restConsumer.tlsOptions.trustedCommonName }}"
+  - name: Remove 'remoteNode' DMR Link
+    solace_dmr_cluster_link:
+      name: remoteNode
+      dmr: foo
+      state: absent
 
-        state: present
-
-      register: result
-
-    - debug:
-        msg: "(solace_rdp_restConsumer_trustedCommonName): result={{ result }}"
+  - name: Add 'remoteNode' DMR Link
+    solace_dmr_cluster_link:
+      name: remoteNode
+      dmr: foo
+      state: present
+      settings:
+        enabled: false
+        authenticationBasicPassword: secret_password
+        span: internal
+        initiator: local
 '''
 
 RETURN = '''
@@ -127,9 +117,9 @@ response:
 '''
 
 
-class SolaceRdpRestConsumerTrustedCommonNameTask(su.SolaceTask):
+class SolaceDMRLinkTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'tlsTrustedCommonName'
+    LOOKUP_ITEM_KEY = 'remoteNodeName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -138,42 +128,40 @@ class SolaceRdpRestConsumerTrustedCommonNameTask(su.SolaceTask):
         return self.module.params['name']
 
     def get_args(self):
-        return [self.module.params['msg_vpn'], self.module.params['rdp_name'], self.module.params['rest_consumer_name']]
+        return [self.module.params['dmr']]
 
-    def get_func(self, solace_config, vpn, rdp_name, rest_consumer_name, lookup_item_value):
-        """Get all trusted common names"""
-        # GET /msgVpns/{msgVpnName}/restDeliveryPoints/{restDeliveryPointName}/restConsumers/{restConsumerName}/tlsTrustedCommonNames/{tlsTrustedCommonName}
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, rdp_name, su.RDP_REST_CONSUMERS, rest_consumer_name, su.RDP_TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+    def get_func(self, solace_config, dmr, lookup_item_value):
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, vpn, rdp_name, rest_consumer_name, name, settings=None):
-        """Add a trusted common name"""
-        # POST /msgVpns/{msgVpnName}/restDeliveryPoints/{restDeliveryPointName}/restConsumers/{restConsumerName}/tlsTrustedCommonNames
-        defaults = {}
+    def create_func(self, solace_config, dmr, link, settings=None):
+        """Create a DMR Cluster"""
+        defaults = {
+            'dmrClusterName': dmr
+        }
         mandatory = {
-            'msgVpnName': vpn,
-            'restConsumerName': rest_consumer_name,
-            'restDeliveryPointName': rdp_name,
-            'tlsTrustedCommonName': name
+            'remoteNodeName': link
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, rdp_name, su.RDP_REST_CONSUMERS, rest_consumer_name, su.RDP_TLS_TRUSTED_COMMON_NAMES]
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS]
         return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, vpn, rdp_name, rest_consumer_name, lookup_item_value):
-        """Delete an existing rest consumer"""
-        # DELETE /msgVpns/{msgVpnName}/restDeliveryPoints/{restDeliveryPointName}/restConsumers/{restConsumerName}/tlsTrustedCommonNames/{tlsTrustedCommonName}
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.RDP_REST_DELIVERY_POINTS, rdp_name, su.RDP_REST_CONSUMERS, rest_consumer_name, su.RDP_TLS_TRUSTED_COMMON_NAMES, lookup_item_value]
+    def update_func(self, solace_config, dmr, lookup_item_value, settings):
+        """Update an existing VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
+        return su.make_patch_request(solace_config, path_array, settings)
+
+    def delete_func(self, solace_config, dmr, lookup_item_value):
+        """Delete a VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
 def run_module():
     """Entrypoint to module"""
     module_args = dict(
-        rdp_name=dict(type='str', required=True),
-        rest_consumer_name=dict(type='str', required=True),
         name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
+        dmr=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -181,15 +169,16 @@ def run_module():
         password=dict(type='str', default='admin', no_log=True),
         settings=dict(type='dict', require=False),
         state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='30', require=False),
+        timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
     )
+
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    solace_task = SolaceRdpRestConsumerTrustedCommonNameTask(module)
+    solace_task = SolaceDMRLinkTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

@@ -35,13 +35,13 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_acl_connect
+module: solace_acl_client_connect_exception
 
-short_description: Configure a client connect exceptions for an ACL Profile.
+short_description: Configure client connect exception objects for an ACL Profile.
 
 description:
-  - "Allows addition and removal of client connect exception(s) for ACL Profiles on Solace Brokers in an idempotent manner."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile."
+  - "Allows addition and removal of client connect exception objects for ACL Profiles."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/getMsgVpnAclProfileClientConnectExceptions."
 
 options:
   name:
@@ -82,7 +82,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 
@@ -94,17 +94,18 @@ author:
 
 EXAMPLES = '''
   - name: Remove ACL Client Connect Exception
-    solace_acl_connect:
+    solace_acl_client_connect_exception:
       name: "{{client_address}}"
       acl_profile_name: "{{ acl_profile }}"
       msg_vpn: "{{ msg_vpn }}"
       state: absent
 
   - name: Add ACL Client Connect Exception
-    solace_acl_connect:
+    solace_acl_client_connect_exception:
       name: "{{client_address}}"
       acl_profile_name: "{{ acl_profile }}"
       msg_vpn: "{{ msg_vpn }}"
+      state: present
 '''
 
 RETURN = '''
@@ -151,22 +152,15 @@ class SolaceACLClientConnectExceptionTask(su.SolaceTask):
 
 def run_module():
     """Entrypoint to module"""
+
     module_args = dict(
         name=dict(type='str', required=True),
         msg_vpn=dict(type='str', required=True),
         acl_profile_name=dict(type='str', required=True),
-        host=dict(type='str', default='localhost'),
-        port=dict(type='int', default=8080),
-        secure_connection=dict(type='bool', default=False),
-        username=dict(type='str', default='admin'),
-        password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
-        x_broker=dict(type='str', default='')
     )
+
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec=su.compose_module_args(module_args),
         supports_check_mode=True
     )
 

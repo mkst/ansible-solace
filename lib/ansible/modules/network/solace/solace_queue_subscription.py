@@ -35,23 +35,20 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_link_remote_address
+module: solace_subscription
 
-short_description: Configure a remote address object on a DMR cluster link.
+short_description: Configure a subscription object on a queue.
 
 description:
-  - "Allows addition, removal and configuration of remote address objects on a DRM cluster link."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/createDmrClusterLinkRemoteAddress."
+  - "Allows addition, removal and configuration of subscription objects on a queue."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/queue/createMsgVpnQueueSubscription."
 
 options:
   name:
-    description: The FQDN or IP address (and optional port) of the remote node. Maps to 'remoteAddress' in the API.
+    description: The subscription topic. Maps to 'subscriptionTopic' in the API.
     required: true
-  dmr:
-    description: The DMR cluster name. Maps to 'dmrClusterName' in the API.
-    required: true
-  remote_node_name:
-    description: The remote node name. Maps to 'remoteNodeName' in the API.
+  queue:
+    description: The queue. Maps to 'queueName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -68,6 +65,9 @@ options:
     description: Management port of Solace Broker.
     required: false
     default: 8080
+  msg_vpn:
+    description: The message vpn.
+    required: true
   secure_connection:
     description: If true, use https rather than http for querying.
     required: false
@@ -85,7 +85,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 
@@ -96,19 +96,21 @@ author:
 '''
 
 EXAMPLES = '''
-  - name: Remove 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
-      name: 192.168.0.34
-      remote_node_name: remoteNode
-      dmr: foo
-      state: absent
-
-  - name: Add 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
-      name: 192.168.0.34
-      remote_node_name: remoteNode
-      dmr: foo
-      state: present
+    - name: Create subscription on queues
+      solace_queue_subscription:
+        secure_connection: "{{ deployment.solaceBrokerSempv2.isSecureConnection }}"
+        username: "{{ deployment.solaceBrokerSempv2.username }}"
+        password: "{{ deployment.solaceBrokerSempv2.password }}"
+        host: "{{ deployment.solaceBrokerSempv2.host }}"
+        port: "{{ deployment.solaceBrokerSempv2.port }}"
+        timeout: "{{ deployment.solaceBrokerSempv2.httpRequestTimeout }}"
+        msg_vpn: "{{ deployment.azRDPFunction.brokerConfig.vpn }}"
+        queue: "{{ item.name }}"
+        name: "{{ item.subscription }}"
+        state: present
+      register: result
+      loop: "{{ deployment.azRDPFunction.brokerConfig.queues }}"
+      when: result.rc|default(0)==0
 '''
 
 RETURN = '''
@@ -118,40 +120,40 @@ response:
 '''
 
 
-class SolaceLinkRemoteAddressTask(su.SolaceTask):
+class SolaceSubscriptionTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'remoteAddress'
+    LOOKUP_ITEM_KEY = 'subscriptionTopic'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
-    def get_args(self):
-        return [self.module.params['dmr'], self.module.params['remote_node_name']]
-
     def lookup_item(self):
         return self.module.params['name']
 
-    def get_func(self, solace_config, dmr, link, lookup_item_value):
-        # GET /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+    def get_args(self):
+        return [self.module.params['msg_vpn'], self.module.params['queue']]
+
+    def get_func(self, solace_config, vpn, queue, lookup_item_value):
+        """Pull configuration for all Subscriptions associated with a given VPN and Queue"""
+        # GET /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions/{subscriptionTopic}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, dmr, link, address, settings=None):
-        # POST /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses
-        defaults = {
-            'dmrClusterName': dmr,
-            'remoteNodeName': link
-        }
+    def create_func(self, solace_config, vpn, queue, topic, settings=None):
+        """Create a Subscription for a Topic/Endpoint on a Queue"""
+        # POST /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions
+        defaults = {}
         mandatory = {
-            'remoteAddress': address
+            'subscriptionTopic': topic
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS]
         return su.make_post_request(solace_config, path_array, data)
 
-    def delete_func(self, solace_config, dmr, link, lookup_item_value):
-        # DELETE /dmrClusters/{dmrClusterName}/links/{remoteNodeName}/remoteAddresses/{remoteAddress}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, dmr, su.LINKS, link, su.REMOTE_ADDRESSES, lookup_item_value]
+    def delete_func(self, solace_config, vpn, queue, lookup_item_value):
+        """Delete a Subscription"""
+        # DELETE /msgVpns/{msgVpnName}/queues/{queueName}/subscriptions/{subscriptionTopic}
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES, queue, su.SUBSCRIPTIONS, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -159,8 +161,8 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
-        dmr=dict(type='str', required=True),
-        remote_node_name=dict(type='str', required=True),
+        queue=dict(type='str', required=True),
+        msg_vpn=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -170,16 +172,14 @@ def run_module():
         state=dict(default='present', choices=['absent', 'present']),
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
-
     )
-
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    solace_task = SolaceLinkRemoteAddressTask(module)
-    result = solace_task.do_task()
+    solace_topic_task = SolaceSubscriptionTask(module)
+    result = solace_topic_task.do_task()
 
     module.exit_json(**result)
 

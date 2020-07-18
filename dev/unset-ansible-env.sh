@@ -27,10 +27,9 @@
 ################################################################################
 # usage: source unset-ansible-env.sh
 #
+
+
 # Remove ansible-solace path from ansible env vars
-
-clear
-
 if [[ -z $ANSIBLE_SOLACE_HOME ]]; then
     echo; echo "ANSIBLE_SOLACE_HOME not found, doing nothing."; echo; return 1
 fi
@@ -42,10 +41,14 @@ export ANSIBLE_LIBRARY=${ANSIBLE_MODULE_UTILS#$REMOVE_PATH}
 if [[ -z $ANSIBLE_LIBRARY ]]; then unset ANSIBLE_LIBRARY; fi
 unset ANSIBLE_SOLACE_HOME
 unset ANSIBLE_PYTHON_INTERPRETER
+unset ANSIBLE_SOLACE_ENABLE_LOGGING
+
+clear
 echo
-echo "Removed ansible-solace path from ansible env vars:"; echo
-echo "ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
-echo "ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
-echo "ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
-echo "ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"
+echo "Ansible env vars:"; echo
+echo " - ANSIBLE_PYTHON_INTERPRETER=$ANSIBLE_PYTHON_INTERPRETER"
+echo " - ANSIBLE_SOLACE_HOME=$ANSIBLE_SOLACE_HOME"
+echo " - ANSIBLE_MODULE_UTILS=$ANSIBLE_MODULE_UTILS"
+echo " - ANSIBLE_LIBRARY=$ANSIBLE_LIBRARY"
+echo " - ANSIBLE_SOLACE_ENABLE_LOGGING=$ANSIBLE_SOLACE_ENABLE_LOGGING"
 echo

@@ -35,17 +35,17 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_dmr
+module: solace_topic_endpoint
 
-short_description: Configure a DMR cluster objects.
+short_description: Configure a topic endpoint object on a message vpn.
 
 description:
-  - "Allows addition, removal and configuration of DMR cluster objects on Solace Brokers in an idempotent manner."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster."
+  - "Allows addition, removal and configuration of topic endpoint objects."
+  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/topicEndpoint."
 
 options:
   name:
-    description: Name of the DMR cluster. Maps to 'dmrClusterName' in the API.
+    description: The topic endpoint name. Maps to 'topicEndpointName' in the API.
     required: true
   settings:
     description: JSON dictionary of additional configuration, see Reference documentation.
@@ -62,6 +62,9 @@ options:
     description: Management port of Solace Broker.
     required: false
     default: 8080
+  msg_vpn:
+    description: The message vpn.
+    required: true
   secure_connection:
     description: If true, use https rather than http for querying.
     required: false
@@ -79,7 +82,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 
@@ -90,21 +93,7 @@ author:
 '''
 
 EXAMPLES = '''
-# Create a DMR Cluster with default settings
-- name: Create DMR Cluster foo
-  solace_dmr:
-    name: foo
-# Ensure a DMR Cluster called bar does not exist
-- name: Remove DMR Cluster bar
-  solace_dmr:
-    name: bar
-    state: absent
-# Set specific DMR Cluster setting on foo
-- name: Set tlsServerCertMaxChainDepth to 5 on DMR CLuster foo
-  solace_dmr:
-    name: foo
-    settings:
-      tlsServerCertMaxChainDepth: 5
+
 '''
 
 RETURN = '''
@@ -114,9 +103,9 @@ response:
 '''
 
 
-class SolaceDMRClusterTask(su.SolaceTask):
+class SolaceTopicTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'dmrClusterName'
+    LOOKUP_ITEM_KEY = 'topicEndpointName'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
@@ -125,32 +114,32 @@ class SolaceDMRClusterTask(su.SolaceTask):
         return self.module.params['name']
 
     def get_args(self):
-        return []
+        return [self.module.params['msg_vpn']]
 
-    def get_func(self, solace_config, lookup_item_value):
-        # GET /dmrClusters/{dmrClusterName}
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+    def get_func(self, solace_config, vpn, lookup_item_value):
+        """Pull configuration for all Topic/Endpoints associated with a given VPN"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, dmr, settings=None):
-        """Create a DMR Cluster"""
-        defaults = {
-            'enabled': True,
-            'authenticationBasicPassword': solace_config.vmr_auth[1]
-        }
+    def create_func(self, solace_config, vpn, topic, settings=None):
+        """Create a Topic/Endpoint"""
+        defaults = {}
         mandatory = {
-            'dmrClusterName': dmr
+            'msgVpnName': vpn,
+            'topicEndpointName': topic
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS]
         return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, lookup_item_value, settings):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+    def update_func(self, solace_config, vpn, lookup_item_value, settings):
+        """Update an existing Topic/Endpoint"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
         return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, lookup_item_value):
-        path_array = [su.SEMP_V2_CONFIG, su.DMR_CLUSTERS, lookup_item_value]
+    def delete_func(self, solace_config, vpn, lookup_item_value):
+        """Delete a Topic/Endpoint"""
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.TOPIC_ENDPOINTS, lookup_item_value]
         return su.make_delete_request(solace_config, path_array)
 
 
@@ -158,6 +147,7 @@ def run_module():
     """Entrypoint to module"""
     module_args = dict(
         name=dict(type='str', required=True),
+        msg_vpn=dict(type='str', required=True),
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
@@ -167,15 +157,13 @@ def run_module():
         state=dict(default='present', choices=['absent', 'present']),
         timeout=dict(default='1', require=False),
         x_broker=dict(type='str', default='')
-
     )
-
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    solace_task = SolaceDMRClusterTask(module)
+    solace_task = SolaceTopicTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

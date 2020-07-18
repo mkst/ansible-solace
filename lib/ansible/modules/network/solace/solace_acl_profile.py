@@ -82,7 +82,7 @@ options:
     required: false
     default: 1
   x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SMEPv2 Proxy/agent infrastructure.
+    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
     required: false
 
 
@@ -165,21 +165,14 @@ class SolaceACLProfileTask(su.SolaceTask):
 
 def run_module():
     """Entrypoint to module"""
+
     module_args = dict(
         name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
-        host=dict(type='str', default='localhost'),
-        port=dict(type='int', default=8080),
-        secure_connection=dict(type='bool', default=False),
-        username=dict(type='str', default='admin'),
-        password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
-        x_broker=dict(type='str', default='')
+        msg_vpn=dict(type='str', required=True)
     )
+
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec=su.compose_module_args(module_args),
         supports_check_mode=True
     )
 

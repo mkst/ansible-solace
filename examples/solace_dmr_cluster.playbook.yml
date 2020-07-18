@@ -2,11 +2,11 @@
   hosts: localhost
   tasks:
   - name: Remove 'foo' DMR Cluster
-    solace_dmr:
+    solace_dmr_cluster:
       name: foo
       state: absent
   - name: Add 'foo' DMR Cluster
-    solace_dmr:
+    solace_dmr_cluster:
       name: foo
       state: present
       settings:
@@ -19,13 +19,13 @@
       msg: '{{ testout }}'
 
   - name: Remove 'remoteNode' DMR Link
-    solace_link:
+    solace_dmr_cluster_link:
       name: remoteNode
       dmr: foo
       state: absent
 
   - name: Add 'remoteNode' DMR Link
-    solace_link:
+    solace_dmr_cluster_link:
       name: remoteNode
       dmr: foo
       state: present
@@ -36,28 +36,28 @@
         initiator: local
 
   - name: Remove 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
+    solace_dmr_cluster_link_remote_address:
       name: 192.168.0.34
       remote_node_name: remoteNode
       dmr: foo
       state: absent
 
   - name: Add 'remoteNode' DMR Link Remote address
-    solace_link_remote_address:
+    solace_dmr_cluster_link_remote_address:
       name: 192.168.0.34
       remote_node_name: remoteNode
       dmr: foo
       state: present
 
   - name: Remove 'remoteNode' DMR Link Trusted CN
-    solace_link_trusted_cn:
+    solace_dmr_cluster_link_trusted_cn:
       name: "*.messaging.solace.cloud"
       remote_node_name: remoteNode
       dmr: foo
       state: absent
 
   - name: Add 'remoteNode' DMR Link Trusted CN
-    solace_link_trusted_cn:
+    solace_dmr_cluster_link_trusted_cn:
       name: "*.messaging.solace.cloud"
       remote_node_name: remoteNode
       dmr: foo
@@ -65,10 +65,9 @@
 
 
   - name: Enable 'remoteNode' DMR Link
-    solace_link:
+    solace_dmr_cluster_link:
       name: remoteNode
       dmr: foo
       settings:
         enabled: true
         egressFlowWindowSize: 127
-

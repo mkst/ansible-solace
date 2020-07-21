@@ -170,15 +170,19 @@ class SolaceRdpRestConsumerTrustedCommonNameTask(su.SolaceTask):
 def run_module():
     """Entrypoint to module"""
 
+    """Compose module arguments"""
     module_args = dict(
         rdp_name=dict(type='str', required=True),
         rest_consumer_name=dict(type='str', required=True),
-        name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
     )
+    arg_spec = su.arg_spec_broker()
+    arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_crud())
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
 
     module = AnsibleModule(
-        argument_spec=su.compose_module_args(module_args),
+        argument_spec=arg_spec,
         supports_check_mode=True
     )
 

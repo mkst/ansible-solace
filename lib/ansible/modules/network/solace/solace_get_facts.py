@@ -186,11 +186,16 @@ def addPathValue(dictionary, path_array, value):
 def run_module():
     """Entrypoint to module"""
 
-    module_args = dict()
+    """Compose module arguments"""
+    module_args = dict(
+    )
+    arg_spec = su.arg_spec_broker()
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
 
     module = AnsibleModule(
-        argument_spec=su.compose_module_args(module_args),
-        supports_check_mode=False
+        argument_spec=arg_spec,
+        supports_check_mode=True
     )
 
     result = dict(

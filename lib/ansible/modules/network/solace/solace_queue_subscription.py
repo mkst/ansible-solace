@@ -159,22 +159,19 @@ class SolaceSubscriptionTask(su.SolaceTask):
 
 def run_module():
     """Entrypoint to module"""
+
+    """Compose module arguments"""
     module_args = dict(
-        name=dict(type='str', required=True),
         queue=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
-        host=dict(type='str', default='localhost'),
-        port=dict(type='int', default=8080),
-        secure_connection=dict(type='bool', default=False),
-        username=dict(type='str', default='admin'),
-        password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
-        x_broker=dict(type='str', default='')
     )
+    arg_spec = su.arg_spec_broker()
+    arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_crud())
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
+
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec=arg_spec,
         supports_check_mode=True
     )
 

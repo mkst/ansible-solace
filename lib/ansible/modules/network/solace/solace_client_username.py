@@ -35,7 +35,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_client
+module: solace_client_username
 
 short_description: Configure a client username object on a message vpn.
 
@@ -94,13 +94,13 @@ author:
 
 EXAMPLES = '''
 - name: Remove Client
-solace_client:
+solace_client_username:
   name: "{{ client }}"
   msg_vpn: "{{ msg_vpn }}"
   state: absent
 
 - name: Add Client
-solace_client:
+solace_client_username:
   name: "{{ client }}"
   msg_vpn: "{{ msg_vpn }}"
   settings:
@@ -108,7 +108,7 @@ solace_client:
     password: "{{ client_password }}"
 
 - name: Update Client password
-solace_client:
+solace_client_username:
   name: "{{ client }}"
   msg_vpn: "{{ msg_vpn }}"
   settings:
@@ -170,21 +170,18 @@ class SolaceClientTask(su.SolaceTask):
 
 def run_module():
     """Entrypoint to module"""
+
+    """Compose module arguments"""
     module_args = dict(
-        name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
-        host=dict(type='str', default='localhost'),
-        port=dict(type='int', default=8080),
-        secure_connection=dict(type='bool', default=False),
-        username=dict(type='str', default='admin'),
-        password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
-        x_broker=dict(type='str', default='')
     )
+    arg_spec = su.arg_spec_broker()
+    arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_crud())
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
+
     module = AnsibleModule(
-        argument_spec=module_args,
+        argument_spec=arg_spec,
         supports_check_mode=True
     )
 

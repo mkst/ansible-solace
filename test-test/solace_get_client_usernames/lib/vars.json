@@ -1,0 +1,16 @@
+{
+  "clientUsernames": [
+    {
+      "name": "ansible-solace__test__1__"
+    },
+    {
+      "name": "ansible-solace__test__2__"
+    },
+    {
+      "name": "ansible-solace__test__3__"
+    },
+    {
+      "name": "ansible-solace__test__4__"
+    }
+  ]
+}

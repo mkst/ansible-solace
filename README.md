@@ -146,7 +146,7 @@ Status of the `solace_*` modules:
 
 | Module | SEMP Endpoint | Type | Status | Example |
 | ------ | ------------- |:----:|:------:|:-------:|
-| [solace_get_facts](lib/ansible/modules/network/solace/solace_get_facts.py) | about/... | Lookup | :sunny: | [:page_facing_up:](examples/solace_get_facts.playbook.yml) |
+| [solace_get_facts](lib/ansible/modules/network/solace/solace_get_facts.py) | about/... | Query | :sunny: | [:page_facing_up:](examples/solace_get_facts.playbook.yml) |
 |  |  |  | | |
 | [solace_acl_profile](lib/ansible/modules/network/solace/solace_acl_profile.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.playbook.playbook.yml) |
 | [solace_acl_client_connect_exception](lib/ansible/modules/network/solace/solace_acl_client_connect_exception.py) | aclProfile | Action | :sunny: | [:page_facing_up:](examples/solace_acl_profile.playbook.yml) |
@@ -160,7 +160,8 @@ Status of the `solace_*` modules:
 |   |   |   |   |   |
 | [solace_cert_authority](lib/ansible/modules/network/solace/solace_cert_authority.py) | certAuthority | Action | :sunny: | [:page_facing_up:](examples/solace_cert_authority.yml) |
 |   |   |   |   |   |
-| [solace_client](lib/ansible/modules/network/solace/solace_client.py) | clientUsername | Action | :sunny: | [:page_facing_up:](examples/solace_client.yml) |
+| [solace_get_client_usernames](lib/ansible/modules/network/solace/solace_get_client_usernames.py) | clientUsername | Query | :sunny: | [:page_facing_up:](test-test/solace_get_client_usernames/solace_get_client_usernames.playbook.yml) |
+| [solace_client_username](lib/ansible/modules/network/solace/solace_client_username.py) | clientUsername | Action | :sunny: | [:page_facing_up:](examples/solace_client_username.yml) |
 |   |   |   |   |   |
 | [solace_client_profile](lib/ansible/modules/network/solace/solace_client_profile.py) | clientProfile | Action | :sunny: | |
 |   |   |   |   |   |
@@ -171,6 +172,7 @@ Status of the `solace_*` modules:
 | [solace_dmr_cluster_link_remote_address](lib/ansible/modules/network/solace/solace_dmr_cluster_link_remote_address.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.playbook.yml) |
 | [solace_dmr_cluster_link_trusted_cn](lib/ansible/modules/network/solace/solace_dmr_cluster_link_trusted_cn.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.playbook.yml) |
 |   |   |   |   |   |
+| [solace_get_queues](lib/ansible/modules/network/solace/solace_get_queues.py) | queue | Query | :sunny: | [:page_facing_up:](test-test/solace_get_queues/solace_get_queues.playbook.yml) |
 | [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queue.yml) [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
 | [solace_queue_subscription](lib/ansible/modules/network/solace/solace_queue_subscription.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
 |   |   |   |   |   |

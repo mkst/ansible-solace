@@ -8,13 +8,13 @@
   tasks:
 
   - name: Remove Client
-    solace_client:
+    solace_client_username:
       name: "{{ client }}"
       msg_vpn: "{{ msg_vpn }}"
       state: absent
 
   - name: Add Client
-    solace_client:
+    solace_client_username:
       name: "{{ client }}"
       msg_vpn: "{{ msg_vpn }}"
       settings:
@@ -22,7 +22,7 @@
         password: "{{ client_password }}"
 
   - name: Update Client password
-    solace_client:
+    solace_client_username:
       name: "{{ client }}"
       msg_vpn: "{{ msg_vpn }}"
       settings:

@@ -2,16 +2,7 @@
 
 ## Framework Enhancements
 
-### GET list of objects for each object
-
-Examples:
-  - solace_get_queues
-  - solace_get_acl_profiles
-  - ...
-
-Usage:
-  - get a list of queues
-  - use the result to remove all queues in a loop
+- Create a Test Framework & CI/CD Pipeline
 
 ### Define a Group
 
@@ -50,7 +41,11 @@ Usage:
 - [solace_topic_endpoint_template](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/topicEndpointTemplate)
 - [solace_virtual_hostname](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/virtualHostname)
 
+### Create get_&lt;module> modules
 
+Create for each module a get_list() module.
+
+Examples: `solace_get_queues`, `solace_get_client_usernames`
 
 ### Update
 

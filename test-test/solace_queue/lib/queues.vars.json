@@ -1,0 +1,36 @@
+{
+  "queues": [
+    {
+      "name": "ansible-solace/test/__1__/topic/subscription/__xx__",
+      "subscriptions": [
+        "ansible-solace/test/__1__/topic/subscription/1/>",
+        "ansible-solace/test/__1__/topic/subscription/2/>",
+        "ansible-solace/test/__1__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "name": "ansible-solace/test/__2__/topic/subscription/__xx__",
+      "subscriptions": [
+        "ansible-solace/test/__2__/topic/subscription/1/>",
+        "ansible-solace/test/__2__/topic/subscription/2/>",
+        "ansible-solace/test/__2__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "name": "ansible-solace/test/__3__/topic/subscription/__xx__",
+      "subscriptions": [
+        "ansible-solace/test/__3__/topic/subscription/1/>",
+        "ansible-solace/test/__3__/topic/subscription/2/>",
+        "ansible-solace/test/__3__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "name": "ansible-solace/test/__4__/topic/subscription/__xx__",
+      "subscriptions": [
+        "ansible-solace/test/__4__/topic/subscription/1/>",
+        "ansible-solace/test/__4__/topic/subscription/2/>",
+        "ansible-solace/test/__4__/topic/subscription/3/>"
+        ]
+    }
+  ]
+}

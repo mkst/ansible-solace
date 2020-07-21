@@ -40,51 +40,20 @@ module: solace_acl_profile
 short_description: Configure an ACL Profile on a message vpn.
 
 description:
-  - "Allows addition, removal and configuration of ACL Profile(s) on Solace Brokers in an idempotent manner."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile."
+- "Configure an ACL Profile on a message vpn."
+- "Allows addition, removal and configuration of ACL Profile(s) on Solace Brokers in an idempotent manner."
+- "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile)."
 
 options:
-  name:
-    description: Name of the ACL Profile. Maps to 'aclProfileName' in the API.
-    required: true
-  settings:
-    description: JSON dictionary of additional configuration, see Reference documentation.
-    required: false
-  state:
-    description: Target state. [present|absent].
-    required: false
-    default: present
-  host:
-    description: Hostname of Solace Broker.
-    required: false
-    default: "localhost"
-  port:
-    description: Management port of Solace Broker.
-    required: false
-    default: 8080
-  msg_vpn:
-    description: The message vpn.
-    required: true
-  secure_connection:
-    description: If true, use https rather than http for querying.
-    required: false
-    default: false
-  username:
-    description: Administrator username for Solace Broker.
-    required: false
-    default: "admin"
-  password:
-    description: Administrator password for Solace Broker.
-    required: false
-    default: "admin"
-  timeout:
-    description: Connection timeout in seconds for the http request.
-    required: false
-    default: 1
-  x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
-    required: false
+    name:
+        description: Name of the ACL Profile. Maps to 'aclProfileName' in the API.
+        required: true
 
+extends_documentation_fragment:
+- solace.broker
+- solace.vpn
+- solace.settings
+- solace.state
 
 author:
   - Mark Street (mkst@protonmail.com)
@@ -166,13 +135,17 @@ class SolaceACLProfileTask(su.SolaceTask):
 def run_module():
     """Entrypoint to module"""
 
+    """Compose module arguments"""
     module_args = dict(
-        name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True)
     )
+    arg_spec = su.arg_spec_broker()
+    arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_crud())
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
 
     module = AnsibleModule(
-        argument_spec=su.compose_module_args(module_args),
+        argument_spec=arg_spec,
         supports_check_mode=True
     )
 

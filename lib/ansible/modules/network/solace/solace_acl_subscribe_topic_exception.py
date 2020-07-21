@@ -40,10 +40,11 @@ module: solace_acl_subscribe_topic_exception
 short_description: Configure a subscribe topic exception object for an ACL Profile.
 
 description:
-  - "Allows addition and removal of a subscribe topic exception object for an ACL Profile."
-  - "Supported versions: [ <=2.13, >=2.14 ]."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeTopicException."
-  - "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeException."
+- "Configure a subscribe topic exception object for an ACL Profile."
+- "Allows addition and removal of a subscribe topic exception object for an ACL Profile."
+- "Supported versions: [ <=2.13, >=2.14 ]."
+- "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeTopicException."
+- "Reference: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile/createMsgVpnAclProfileSubscribeException."
 
 options:
   name:
@@ -56,47 +57,15 @@ options:
     description: The topic syntax.
     required: false
     default: "smf"
-  settings:
-    description: JSON dictionary of additional configuration, see Reference documentation.
-    required: false
-  state:
-    description: Target state. [present|absent].
-    required: false
-    default: present
-  host:
-    description: Hostname of Solace Broker.
-    required: false
-    default: "localhost"
-  port:
-    description: Management port of Solace Broker.
-    required: false
-    default: 8080
-  msg_vpn:
-    description: The message vpn.
-    required: true
-  secure_connection:
-    description: If true, use https rather than http for querying.
-    required: false
-    default: false
-  username:
-    description: Administrator username for Solace Broker.
-    required: false
-    default: "admin"
-  password:
-    description: Administrator password for Solace Broker.
-    required: false
-    default: "admin"
-  timeout:
-    description: Connection timeout in seconds for the http request.
-    required: false
-    default: 1
-  x_broker:
-    description: Custom HTTP header with the broker virtual router id, if using a SEMPv2 Proxy/agent infrastructure.
-    required: false
-  semp_version:
-    description: The Semp API version of the broker. See 'solace_get_facts' for info on how to retrieve the version from the broker.
-    required: true
 
+extends_documentation_fragment:
+- solace.broker
+- solace.vpn
+- solace.state
+- solace.semp_version
+
+seealso:
+- module: solace_acl_profile
 
 author:
   - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
@@ -211,16 +180,20 @@ class SolaceACLSubscribeTopicExceptionTask(su.SolaceTask):
 def run_module():
     """Entrypoint to module"""
 
+    """Compose module arguments"""
     module_args = dict(
-        name=dict(type='str', required=True),
-        msg_vpn=dict(type='str', required=True),
         acl_profile_name=dict(type='str', required=True),
         topic_syntax=dict(type='str', default='smf'),
-        semp_version=dict(type='str', required=True)
     )
+    arg_spec = su.arg_spec_broker()
+    arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_crud())
+    arg_spec.update(su.arg_spec_semp_version())
+    # module_args override standard arg_specs
+    arg_spec.update(module_args)
 
     module = AnsibleModule(
-        argument_spec=su.compose_module_args(module_args),
+        argument_spec=arg_spec,
         supports_check_mode=True
     )
 

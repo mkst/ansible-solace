@@ -43,11 +43,23 @@ Provide at a minimum:
   - add the link to the Sempv2 Resource.
   - add api versions supported if applicable. Example:  [solace_acl_publish_topic_exception](lib/ansible/modules/network/solace/solace_acl_publish_topic_exception.py).
 * options
-  - copy the common options and add the module specific options.
+  - add module specific options
 * author
   - add your name & e-mail
 * example
   - add a short example
+
+Note: use the fragments in `ansible/plugins/doc_fragments/solace.py`.
+For Example:
+
+````python
+extends_documentation_fragment:
+- solace.broker
+- solace.vpn
+- solace.settings
+- solace.state
+
+````
 
 Test:
 ````bash
@@ -222,24 +234,21 @@ Adjust the dictionary for the particular resource.
 
 Example:
 
-
 ````python
-# Module specific parameters
+"""Compose module arguments"""
 module_args = dict(
-    # always required
-    name=dict(type='str', required=True),
-    # example module specific parameters
-    msg_vpn=dict(type='str', required=True),
     acl_profile_name=dict(type='str', required=True),
     topic_syntax=dict(type='str', default='smf'),
-    # in this example, make the semp_version required
-    semp_version=dict(type='str', required=True)
 )
+arg_spec = su.arg_spec_broker()
+arg_spec.update(su.arg_spec_vpn())
+arg_spec.update(su.arg_spec_crud())
+arg_spec.update(su.arg_spec_semp_version())
+# module_args override standard arg_specs
+arg_spec.update(module_args)
 
 module = AnsibleModule(
-    # adds the common module arguments as well
-    # e.g. host, port, etc.
-    argument_spec=su.compose_module_args(module_args),
+    argument_spec=arg_spec,
     supports_check_mode=True
 )
 ````
@@ -260,7 +269,7 @@ See the following modules for examples:
 - [solace_acl_subscribe_topic_exception](lib/ansible/modules/network/solace/solace_acl_subscribe_topic_exception.py).
 
 In the playbook, use `solace_get_facts`.
-See examples: [Solace Get Facts Playbook](examples/solace_get_facts.playbook.yml) & [ACL Profile Playbook](examples/solace_acl_profile.playbook.yml). 
+See examples: [Solace Get Facts Playbook](examples/solace_get_facts.playbook.yml) & [ACL Profile Playbook](examples/solace_acl_profile.playbook.yml).
 
 Create a lookup structure:
 
@@ -294,7 +303,7 @@ def lookup_semp_version(self, semp_version):
 
 ````
 
-Use `self.get_semp_version_key` function.
+Use `self.get_semp_version_key()` function.
 
 Example:
 

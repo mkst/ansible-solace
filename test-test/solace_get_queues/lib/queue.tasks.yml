@@ -1,0 +1,33 @@
+# Tasks to add/update a queue
+# include & use to loop over tasks
+---
+
+    - name: Disable Egress of Queue
+      solace_queue:
+        name: "{{ item.name }}"
+        settings:
+          egressEnabled: false
+        state: present
+
+    - name: Adding / updating queue
+      solace_queue:
+        name: "{{ item.name }}"
+        settings:
+          egressEnabled: true
+          ingressEnabled: true
+          permission: "consume"
+          maxMsgSpoolUsage: 100
+          eventMsgSpoolUsageThreshold:
+            setPercent: 60
+            clearPercent: 50
+        state: present
+
+    - name: Enable Egress of Queue
+      solace_queue:
+        name: "{{ item.name }}"
+        settings:
+          egressEnabled: true
+        state: present
+
+###
+# The End.

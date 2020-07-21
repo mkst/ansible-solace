@@ -1,0 +1,8 @@
+{
+  "brokerDockerImages": [
+    "solace/solace-pubsub-standard:9.3.1.28",
+    "solace/solace-pubsub-standard:9.5.0.30",
+    "solace/solace-pubsub-standard:9.6.0.27",
+    "solace/solace-pubsub-standard:latest"
+  ]
+}

@@ -30,7 +30,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ansible-solace",
-    version="0.2.1.dev1",
+    version="0.3.0",
     author="Solace Corporation",
     author_email="ricardo.gomez-ulmke@solace.com",
     description="Ansible modules to configure Solace PubSub+ event brokers with SEMP(v2).",
@@ -43,7 +43,11 @@ setuptools.setup(
     },
     license='MIT License',
     package_dir={'': 'lib'},
-    packages=['ansible/module_utils/network/solace', 'ansible/modules/network/solace'],
+    packages=[
+        'ansible/module_utils/network/solace',
+        'ansible/modules/network/solace'
+        'ansible/plugins/doc_fragments'
+        ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

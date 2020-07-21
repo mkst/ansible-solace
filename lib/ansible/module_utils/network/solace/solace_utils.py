@@ -38,7 +38,6 @@ from ansible.errors import AnsibleError
 
 try:
     import requests
-
     HAS_REQUESTS = True
 except ImportError:
     REQUESTS_IMP_ERR = traceback.format_exc()
@@ -253,21 +252,67 @@ class SolaceTask:
         return version_lookup_dict[lookup_key]
 
 
-def compose_module_args(module_args):
-    _module_args = dict(
+# composable argument specs
+
+def arg_spec_broker():
+    return dict(
         host=dict(type='str', default='localhost'),
         port=dict(type='int', default=8080),
         secure_connection=dict(type='bool', default=False),
         username=dict(type='str', default='admin'),
         password=dict(type='str', default='admin', no_log=True),
-        settings=dict(type='dict', require=False),
-        state=dict(default='present', choices=['absent', 'present']),
-        timeout=dict(default='1', require=False),
-        x_broker=dict(type='str', default=''),
-        semp_version=dict(type='str', require=False)
+        timeout=dict(type='int', default='10', require=False),
+        x_broker=dict(type='str', default='')
     )
-    _module_args.update(module_args)
-    return _module_args
+
+
+def arg_spec_vpn():
+    return dict(
+        msg_vpn=dict(type='str', required=True)
+    )
+
+
+def arg_spec_settings():
+    return dict(
+        settings=dict(type='dict', require=False)
+    )
+
+
+def arg_spec_semp_version():
+    return dict(
+        semp_version=dict(type='str', require=True)
+    )
+
+
+def arg_spec_state():
+    return dict(
+        state=dict(type='str', default='present', choices=['absent', 'present'])
+    )
+
+
+def arg_spec_name():
+    return dict(
+        name=dict(type='str', required=True)
+    )
+
+
+def arg_spec_crud():
+    arg_spec = arg_spec_name()
+    arg_spec.update(arg_spec_settings())
+    arg_spec.update(arg_spec_state())
+    return arg_spec
+
+
+def arg_spec_query():
+    return dict(
+        query_params=dict(type='dict',
+                          require=False,
+                          options=dict(
+                            select=dict(type='list', default=[], elements='str'),
+                            where=dict(type='list', default=[], elements='str')
+                          )
+                          )
+    )
 
 
 def merge_dicts(*argv):
@@ -318,6 +363,64 @@ def get_configuration(solace_config, path_array, key):
                 and resp['error']['code'] == 6):
             return True, dict()
     return False, resp
+
+
+def get_list(solace_config, path_array, query_params):
+
+    query = 'count=100'
+
+    if query_params:
+        if "select" in query_params and len(query_params['select']) > 0:
+            query = query + "&select=" + ','.join(query_params['select'])
+        if "where" in query_params and len(query_params['where']) > 0:
+            where_array = []
+            for i, where_elem in enumerate(query_params['where']):
+                where_array.append(where_elem.replace('/', '%2F'))
+            query = query + "&where=" + ','.join(where_array)
+
+    path = compose_path(path_array)
+
+    url = solace_config.vmr_url + path + "?" + query
+
+    result_list = []
+
+    hasNextPage = True
+
+    while hasNextPage:
+
+        try:
+            resp = requests.get(
+                        url,
+                        json=None,
+                        auth=solace_config.vmr_auth,
+                        timeout=solace_config.vmr_timeout,
+                        headers={'x-broker-name': solace_config.x_broker},
+                        params=None
+            )
+
+            if ENABLE_LOGGING:
+                log_http_roundtrip(resp)
+
+            if resp.status_code != 200:
+                return False, parse_bad_response(resp)
+            else:
+                body = resp.json()
+                if "data" in body.keys():
+                    result_list.extend(body['data'])
+
+        except requests.exceptions.ConnectionError as e:
+            return False, str(e)
+
+        if "meta" not in body:
+            hasNextPage = False
+        elif "paging" not in body["meta"]:
+            hasNextPage = False
+        elif "nextPageUri" not in body["meta"]["paging"]:
+            hasNextPage = False
+        else:
+            url = body["meta"]["paging"]["nextPageUri"]
+
+    return True, result_list
 
 
 # request/response handling

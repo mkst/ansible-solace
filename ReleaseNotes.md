@@ -10,6 +10,11 @@
     - none
 ### Framework Changes
     - none
+### Tests
+    - solace_mqtt_session:
+      - covers new modules
+
+
 
 ## Version: 0.3.0
 ### New Modules

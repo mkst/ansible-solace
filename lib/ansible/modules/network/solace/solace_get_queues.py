@@ -75,17 +75,17 @@ EXAMPLES = '''
 
 - name: Print existing queue list
   debug:
-    msg: "{{ existing_queues_result.queue_list }}"
+    msg: "{{ existing_queues_result.result_list }}"
 
 - name: Print count of existing queue list
   debug:
-    msg: "{{ existing_queues_result.queue_list_count }}"
+    msg: "{{ existing_queues_result.result_list_count }}"
 
 - name: Remove all found queues
   solace_queue:
     name: "{{ item.queueName }}"
     state: absent
-  loop: "{{ existing_queues_result.queue_list }}"
+  loop: "{{ existing_queues_result.result_list }}"
 '''
 
 RETURN = '''

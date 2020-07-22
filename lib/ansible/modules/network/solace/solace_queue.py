@@ -40,8 +40,7 @@ module: solace_queue
 short_description: Configure a queue object on a message vpn.
 
 description:
-- "Configure a queue object on a message vpn."
-- "Allows addition, removal and configuration of queue objects in an idempotent manner."
+- "Configure a queue object on a message vpn. Allows addition, removal and configuration of queue objects in an idempotent manner."
 - "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/queue)."
 
 options:

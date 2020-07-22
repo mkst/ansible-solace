@@ -1,0 +1,22 @@
+{
+  "all": {
+    "hosts": {
+      "solace-cloud-1": {
+        "meta": {
+          "isSolaceCloud": true,
+          "account": "{account}",
+          "service": "{service}"
+        },
+        "ansible_connection": "local",
+        "sempv2_host": "{host}.messaging.solace.cloud",
+        "sempv2_port": 943,
+        "sempv2_is_secure_connection": true,
+        "sempv2_username": "{username}",
+        "sempv2_password": "{password}",
+        "sempv2_timeout": "60",
+        "vpn": "{vpn}",
+        "virtual_router": "primary"
+      }
+    }
+  }
+}

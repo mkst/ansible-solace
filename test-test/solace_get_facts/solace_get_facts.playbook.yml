@@ -25,9 +25,8 @@
 
 -
   name: Get Facts
-
   hosts: "{{ brokers }}"
-
+  gather_facts: no
   module_defaults:
     solace_get_facts:
       host: "{{ sempv2_host }}"

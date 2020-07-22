@@ -35,51 +35,58 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_acl_profile
+module: solace_mqtt_session
 
-short_description: Configure an ACL Profile on a message vpn.
+short_description: Configure a MQTT Session object.
+
+version_added: "2.9.10"
 
 description:
-- "Configure an ACL Profile on a message vpn. Allows addition, removal and configuration of ACL Profile(s) on Solace Brokers in an idempotent manner."
-- "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile)."
+- "Configure a MQTT Session object. Allows addition, removal and update of a MQTT Session object in an idempotent manner."
+- "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/mqttSession)."
 
 options:
-    name:
-        description: Name of the ACL Profile. Maps to 'aclProfileName' in the API.
-        required: true
+  name:
+    description: The MQTT session client id. Maps to 'mqttSessionClientId' in the API.
+    type: str
+    required: true
+    aliases: [mqtt_session_client_id]
 
 extends_documentation_fragment:
 - solace.broker
 - solace.vpn
+- solace.virtual_router
 - solace.settings
 - solace.state
 
 author:
-  - Mark Street (mkst@protonmail.com)
-  - Swen-Helge Huber (swen-helge.huber@solace.com)
   - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 '''
 
 EXAMPLES = '''
-  - name: Remove ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      state: absent
+    - name: Create Mqtt Session
+      solace_mqtt_session:
+        name: "{{ mqtt_session_client_id }}"
+        settings:
+          enabled: false
+          owner: "{{ mqtt_client_username }}"
+        state: present
 
-  - name: Add ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      settings:
-        clientConnectDefaultAction: allow
+    - name: Update Mqtt Session
+      # skip task if version not correct
+      solace_mqtt_session:
+        name: "{{ mqtt_session_client_id }}"
+        settings:
+          queueMaxMsgSize: 300000
+          queueMaxBindCount: 30
+        state: present
+      when: ansible_facts['solace']['about']['api']['sempVersion'] | float >= 2.14
 
-  - name: Update ACL Profile
-    solace_acl_profile:
-      name: "{{ acl_profile }}"
-      msg_vpn: "{{ msg_vpn }}"
-      settings:
-        publishTopicDefaultAction: allow
+    - name: Delete Mqtt Session
+      solace_mqtt_session:
+        name: "{{ mqtt_session_client_id }}"
+        state: absent
+
 '''
 
 RETURN = '''
@@ -89,46 +96,49 @@ response:
 '''
 
 
-class SolaceACLProfileTask(su.SolaceTask):
+class SolaceMqttSessionTask(su.SolaceTask):
 
-    LOOKUP_ITEM_KEY = 'aclProfileName'
+    LOOKUP_ITEM_KEY = 'mqttSessionClientId'
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
     def get_args(self):
-        return [self.module.params['msg_vpn']]
+        return [self.module.params['msg_vpn'], self.module.params['virtual_router']]
 
     def lookup_item(self):
-        # aclProfileName <= 32 chars; create a 'nicer' hint here
-        lookup_item = self.module.params['name']
-        if len(lookup_item) > 32:
-            raise ValueError("argument 'name' ({}) longer than 32 chars:'{}'".format(self.LOOKUP_ITEM_KEY, lookup_item))
-        return lookup_item
+        return self.module.params['name']
 
-    def get_func(self, solace_config, vpn, lookup_item_value):
-        # GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
+    def get_func(self, solace_config, vpn, virtual_router, lookup_item_value):
+        # GET /msgVpns/{msgVpnName}/mqttSessions/{mqttSessionClientId},{mqttSessionVirtualRouter}
+        uri_ext = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.MQTT_SESSIONS, uri_ext]
         return su.get_configuration(solace_config, path_array, self.LOOKUP_ITEM_KEY)
 
-    def create_func(self, solace_config, vpn, acl_profile, settings=None):
+    def create_func(self, solace_config, vpn, virtual_router, mqtt_session_client_id, settings=None):
+        # POST /msgVpns/{msgVpnName}/mqttSessions
         defaults = {
             'msgVpnName': vpn,
+            'mqttSessionVirtualRouter': virtual_router
         }
         mandatory = {
-            self.LOOKUP_ITEM_KEY: acl_profile
+            self.LOOKUP_ITEM_KEY: mqtt_session_client_id
         }
         data = su.merge_dicts(defaults, mandatory, settings)
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.MQTT_SESSIONS]
         return su.make_post_request(solace_config, path_array, data)
 
-    def update_func(self, solace_config, vpn, lookup_item_value, settings=None):
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
+    def update_func(self, solace_config, vpn, virtual_router, lookup_item_value, settings=None):
+        # PATCH /msgVpns/{msgVpnName}/mqttSessions/{mqttSessionClientId},{mqttSessionVirtualRouter}
+        uri_ext = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.MQTT_SESSIONS, uri_ext]
         return su.make_patch_request(solace_config, path_array, settings)
 
-    def delete_func(self, solace_config, vpn, lookup_item_value):
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.ACL_PROFILES, lookup_item_value]
-        return su.make_delete_request(solace_config, path_array)
+    def delete_func(self, solace_config, vpn, virtual_router, lookup_item_value):
+        # DELETE /msgVpns/{msgVpnName}/mqttSessions/{mqttSessionClientId},{mqttSessionVirtualRouter}
+        uri_ext = ','.join([lookup_item_value, virtual_router])
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.MQTT_SESSIONS, uri_ext]
+        return su.make_delete_request(solace_config, path_array, None)
 
 
 def run_module():
@@ -136,9 +146,11 @@ def run_module():
 
     """Compose module arguments"""
     module_args = dict(
+        name=dict(type='str', aliases=['mqtt_session_client_id'], required=True)
     )
     arg_spec = su.arg_spec_broker()
     arg_spec.update(su.arg_spec_vpn())
+    arg_spec.update(su.arg_spec_virtual_router())
     arg_spec.update(su.arg_spec_crud())
     # module_args override standard arg_specs
     arg_spec.update(module_args)
@@ -148,7 +160,7 @@ def run_module():
         supports_check_mode=True
     )
 
-    solace_task = SolaceACLProfileTask(module)
+    solace_task = SolaceMqttSessionTask(module)
     result = solace_task.do_task()
 
     module.exit_json(**result)

@@ -1,21 +1,31 @@
 # Release Notes
 
-## Version: 0.3.0
-
+## Version: 0.4.0
 ### New Modules
+    - solace_mqtt_session
+    - solace_mqtt_session_subscription
+    - solace_get_mqtt_sessions
+    - solace_get_mqtt_session_subscriptions
+### Removed Modules
+    - none
+### Framework Changes
+    - none
+### Tests
+    - solace_mqtt_session:
+      - covers new modules
 
+
+
+## Version: 0.3.0
+### New Modules
     - solace_get_queues
     - solace_get_client_usernames
     - solace_client_username
-
 ### Removed Modules
-
     - solace_client
-
 ### Framework Changes
-
+    - none
 #### solace_utils
-
 - framework for get_list() - to support get_xxxx modules
 - modularized argument spec:
 ````python
@@ -28,11 +38,8 @@ def arg_spec_name():
 def arg_spec_crud():
 def arg_spec_query():
 ````
-
 #### Document Fragments
-
 Introduced `ansible/plugins/doc_fragments/solace.py`. Modularized documentation fragments.
-
 
 ## Version: 0.2.1
 

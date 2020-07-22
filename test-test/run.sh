@@ -24,6 +24,8 @@
 # ---------------------------------------------------------------------------------------------
 
 clear
+echo; echo "##############################################################################################################"
+echo "# Running tests ..."
 
 SCRIPT=`realpath -s $0`
 SCRIPT_PATH=`dirname $SCRIPT`
@@ -45,14 +47,27 @@ export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/lib/ansible/modules"
 # set test scripts
 
 ansibleSolaceTests=(
-  "$SCRIPT_PATH/wait_until_brokers_available" # this must go first in the list
-  "$SCRIPT_PATH/solace_rdp"
-  "$SCRIPT_PATH/solace_get_facts"
-  "$SCRIPT_PATH/solace_queue"
-  "$SCRIPT_PATH/solace_get_queues"
-  "$SCRIPT_PATH/solace_get_client_usernames"
-  "$SCRIPT_PATH/solace_acl_profile"
+  "wait_until_brokers_available" # this must go first in the list
+  "solace_mqtt_session"
+  "solace_rdp"
+  "solace_get_facts"
+  "solace_queue"
+  "solace_get_queues"
+  "solace_get_client_usernames"
+  "solace_acl_profile"
 )
+
+##############################################################################################################################
+# set Files
+
+localBrokerInventoryFile="$SCRIPT_PATH/lib/local.broker.inventory.json"
+cloudBrokersInventoryFile="$SCRIPT_PATH/lib/cloud.brokers.inventory.json"
+dockerComposeYmlFile="$SCRIPT_PATH/lib/PubSubStandard_singleNode.yml"
+
+if [ ! -f "$localBrokerInventoryFile" ]; then echo "ERR >>> aborting. $localBrokerInventoryFile does not exist."; exit 1; fi
+if [ ! -f "$cloudBrokersInventoryFile" ]; then echo "ERR >>> aborting. $cloudBrokersInventoryFile does not exist."; exit 1; fi
+if [ ! -f "$dockerComposeYmlFile" ]; then echo "ERR >>> aborting. $dockerComposeYmlFile does not exist."; exit 1; fi
+
 
 ##############################################################################################################################
 # set broker images
@@ -98,11 +113,27 @@ echo; echo "List of docker images:"; echo
 docker images | grep solace/
 echo; echo "Done."
 
+
+##############################################################################################################################
+# run tests against cloud brokers
+
+for ansibleSolaceTest in ${ansibleSolaceTests[@]}; do
+
+  runScript="$SCRIPT_PATH/$ansibleSolaceTest/_run.call.sh $cloudBrokersInventoryFile"
+
+  echo; echo "##############################################################################################################"
+  echo "# Cloud broker test: $ansibleSolaceTest"
+  echo "# calling: $runScript"
+
+  $runScript
+
+  if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
+
+done
+
 ##############################################################################################################################
 # loop 2:
-# - start container, run tests
-
-dockerComposeYmlFile="$SCRIPT_PATH/lib/PubSubStandard_singleNode.yml"
+# - start container, run tests against local brokers
 
 for i in "${!brokerDockerImagesArray[@]}"; do
 
@@ -120,11 +151,12 @@ for i in "${!brokerDockerImagesArray[@]}"; do
 
   for ansibleSolaceTest in ${ansibleSolaceTests[@]}; do
 
-    runScript="$ansibleSolaceTest/_run.call.sh"
+    runScript="$SCRIPT_PATH/$ansibleSolaceTest/_run.call.sh $localBrokerInventoryFile"
 
     echo; echo "##############################################################################################################"
-    echo "calling: $runScript"
-    echo "image: $brokerDockerImage"
+    echo "# Local broker test: $ansibleSolaceTest"
+    echo "# image: $brokerDockerImage"
+    echo "# calling: $runScript"
 
     $runScript
 
@@ -135,13 +167,13 @@ for i in "${!brokerDockerImagesArray[@]}"; do
 done
 
 echo; echo "##############################################################################################################"
-echo; echo "All tests successfully completed!"
+echo; echo "# All tests completed successfully!"
 echo;
 ##############################################################################################################################
 # loop 3:
 # - remove all containers, remove all images
 
-echo; echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; echo
+echo; echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; echo
 echo "! WARNING: NOT REMOVING CONTAINERS NOR IMAGES !"
 echo; exit 1; echo
 

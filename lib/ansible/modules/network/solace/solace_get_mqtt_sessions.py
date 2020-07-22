@@ -35,16 +35,15 @@ from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
-module: solace_get_queues
+module: solace_get_mqtt_sessions
 
 version_added: '2.9.10'
 
-short_description: Get a list of Queue objects
+short_description: Get a list of MQTT Session objects
 
 description:
-- "Get a list of Queue objects."
-- "Retrieves all queue objects that match the criteria defined in the 'where' clause and returns the fields defined in the 'select' parameter."
-- "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/queue/getMsgVpnQueues)."
+- "Get a list of MQTT Session objects. Retrieves all objects that match the criteria defined in the 'where' clause and returns the fields defined in the 'select' parameter."
+- "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/mqttSession/getMsgVpnMqttSessions)."
 
 extends_documentation_fragment:
 - solace.broker
@@ -52,40 +51,34 @@ extends_documentation_fragment:
 - solace.query
 
 seealso:
-- module: solace_queue
+- module: solace_mqtt_session
 
 author:
   - Ricardo Gomez-Ulmke (ricardo.gomez-ulmke@solace.com)
 '''
 
 EXAMPLES = '''
-- name: Get queues
-  solace_get_queues:
-    msg_vpn: "{{ vpn }}"
-    query_params:
-      where:
-        - "queueName==ansible-solace/test*"
-        - "ingressEnabled==true"
-        - "maxMsgSpoolUsage<2000"
-        - "eventMsgSpoolUsageThreshold.clearPercent<=60"
-      select:
-        - "queueName"
-        - "eventMsgSpoolUsageThreshold"
-  register: existing_queues_result
+    - name: Get List of MQTT Sessions
+      solace_get_mqtt_sessions:
+        msg_vpn: "{{ vpn }}"
+        query_params:
+          where:
+            - "mqttSessionClientId==ansible-solace_test_mqtt*"
+          select:
+            - "mqttSessionClientId"
+            - "mqttSessionVirtualRouter"
+            - "enabled"
+            - "owner"
+      register: get_sessions_result
 
-- name: Print existing queue list
-  debug:
-    msg: "{{ existing_queues_result.result_list }}"
+    - name: Print existing list
+      debug:
+        msg: "{{ get_sessions_result.result_list }}"
 
-- name: Print count of existing queue list
-  debug:
-    msg: "{{ existing_queues_result.result_list_count }}"
+    - name: Print count of existing queue list
+      debug:
+        msg: "{{ get_sessions_result.result_list_count }}"
 
-- name: Remove all found queues
-  solace_queue:
-    name: "{{ item.queueName }}"
-    state: absent
-  loop: "{{ existing_queues_result.result_list }}"
 '''
 
 RETURN = '''
@@ -96,18 +89,16 @@ result_list:
     elements: complex
     sample: [
         {
-            "eventMsgSpoolUsageThreshold": {
-                "clearPercent": 50,
-                "setPercent": 60
-            },
-            "queueName": "ansible-solace/test/__1__/topic/subscription/__xx__"
+            "enabled": true,
+            "mqttSessionClientId": "ansible-solace_test_mqtt__1__",
+            "mqttSessionVirtualRouter": "primary",
+            "owner": "ansible-solace_test_mqtt_client_username"
         },
         {
-            "eventMsgSpoolUsageThreshold": {
-                "clearPercent": 50,
-                "setPercent": 60
-            },
-            "queueName": "ansible-solace/test/__2__/topic/subscription/__xx__"
+            "enabled": true,
+            "mqttSessionClientId": "ansible-solace_test_mqtt__4__",
+            "mqttSessionVirtualRouter": "primary",
+            "owner": "ansible-solace_test_mqtt_client_username"
         }
     ]
 
@@ -119,15 +110,15 @@ result_list_count:
 '''
 
 
-class SolaceGetQueuesTask(su.SolaceTask):
+class SolaceGetMqttSessionsTask(su.SolaceTask):
 
     def __init__(self, module):
         su.SolaceTask.__init__(self, module)
 
     def get_list(self):
-        # GET /msgVpns/{msgVpnName}/queues
+        # GET /msgVpns/{msgVpnName}/mqttSessions
         vpn = self.module.params['msg_vpn']
-        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.QUEUES]
+        path_array = [su.SEMP_V2_CONFIG, su.MSG_VPNS, vpn, su.MQTT_SESSIONS]
 
         query_params = self.module.params['query_params']
         ok, resp = su.get_list(self.solace_config, path_array, query_params)
@@ -160,7 +151,7 @@ def run_module():
         changed=False
     )
 
-    solace_task = SolaceGetQueuesTask(module)
+    solace_task = SolaceGetMqttSessionsTask(module)
     ok, resp_or_list = solace_task.get_list()
     if not ok:
         module.fail_json(msg=resp_or_list, **result)

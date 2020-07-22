@@ -23,9 +23,11 @@
 # SOFTWARE.
 # ---------------------------------------------------------------------------------------------
 
+if [[ $# != 1 ]]; then echo "Usage: '_run.call.sh full_path/brokers.inventory.json'"; exit 1; fi
+BROKERS_INVENTORY=$1
+
 SCRIPT=`realpath -s $0`
 SCRIPT_PATH=`dirname $SCRIPT`
-BROKERS_ARG=$1
 
 ##############################################################################################################################
 # Prepare
@@ -36,10 +38,8 @@ rm -f $ANSIBLE_SOLACE_LOG_FILE
 ##############################################################################################################################
 # Run
 
-BROKERS_INVENTORY="$SCRIPT_PATH/../lib/brokers.inventory.json"
 PLAYBOOK="$SCRIPT_PATH/solace_queue.playbook.yml"
 BROKERS="all"
-#BROKERS="local"
 
 # --step --check -vvv
 ansible-playbook -i $BROKERS_INVENTORY \

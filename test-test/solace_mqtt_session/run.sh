@@ -23,8 +23,7 @@
 # SOFTWARE.
 # ---------------------------------------------------------------------------------------------
 
-if [[ $# != 1 ]]; then echo "Usage: '_run.call.sh full_path/brokers.inventory.json'"; exit 1; fi
-BROKERS_INVENTORY=$1
+clear
 
 SCRIPT=`realpath -s $0`
 SCRIPT_PATH=`dirname $SCRIPT`
@@ -32,18 +31,48 @@ SCRIPT_PATH=`dirname $SCRIPT`
 ##############################################################################################################################
 # Prepare
 
+source $SCRIPT_PATH/../lib/unset-all.sh
+if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
+source $SCRIPT_PATH/../lib/set-ansible-env.dev.sh
+if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
+
 ANSIBLE_SOLACE_LOG_FILE="$SCRIPT_PATH/ansible-solace.log"
 rm -f $ANSIBLE_SOLACE_LOG_FILE
 
 ##############################################################################################################################
 # Run
 
-PLAYBOOK="$SCRIPT_PATH/solace_get_queues.playbook.yml"
-BROKERS="all"
+# SELECT
+  # select inventory
+  BROKERS_INVENTORY="$SCRIPT_PATH/../lib/local.broker.inventory.json"
+  BROKERS_INVENTORY="$SCRIPT_PATH/../lib/cloud.broker.inventory.json"
+  # select broker(s) inside inventory
+  BROKERS="all"
+# END SELECT
 
+PLAYBOOK="$SCRIPT_PATH/solace_mqtt_session.playbook.yml"
+
+$SCRIPT_PATH/../wait_until_brokers_available/_run.call.sh $BROKERS_INVENTORY
+if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
+
+# --step --check -vvv
 ansible-playbook -i $BROKERS_INVENTORY \
                   $PLAYBOOK \
                   --extra-vars "brokers=$BROKERS" \
+                  --extra-vars "queues_file=$deploymentFile" \
+                  -vvv
+if [[ $? != 0 ]]; then echo "ERR >>> aborting. check $ANSIBLE_SOLACE_LOG_FILE ..."; echo; exit 1; fi
+
+
+##############################################################################################################################
+# show log
+
+echo; echo "Looks good?"
+echo; echo "Show the log?"
+echo; read -p 'Enter to continue, Ctrl-c to abort: ' continue; echo; echo
+
+ANSIBLE_SOLACE_LOG_FILE="$SCRIPT_PATH/ansible-solace.log"
+less $ANSIBLE_SOLACE_LOG_FILE
 
 ###
 # The End.

@@ -24,10 +24,18 @@
 # ---------------------------------------------------------------------------------------------
 
 -
-  name: Create / Update ACL Profile with subscr & pub topic exceptions
+  name: Get/Remove/Add/Update MQTT Session objects with subscriptions
   hosts: "{{ brokers }}"
   gather_facts: no
   module_defaults:
+    solace_client_username:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+      msg_vpn: "{{ vpn }}"
     solace_get_facts:
       host: "{{ sempv2_host }}"
       port: "{{ sempv2_port }}"
@@ -35,7 +43,7 @@
       username: "{{ sempv2_username }}"
       password: "{{ sempv2_password }}"
       timeout: "{{ sempv2_timeout }}"
-    solace_acl_profile:
+    solace_mqtt_session:
       host: "{{ sempv2_host }}"
       port: "{{ sempv2_port }}"
       secure_connection: "{{ sempv2_is_secure_connection }}"
@@ -43,7 +51,8 @@
       password: "{{ sempv2_password }}"
       timeout: "{{ sempv2_timeout }}"
       msg_vpn: "{{ vpn }}"
-    solace_acl_subscribe_topic_exception:
+      virtual_router: "{{ virtual_router }}"
+    solace_mqtt_session_subscription:
       host: "{{ sempv2_host }}"
       port: "{{ sempv2_port }}"
       secure_connection: "{{ sempv2_is_secure_connection }}"
@@ -51,7 +60,15 @@
       password: "{{ sempv2_password }}"
       timeout: "{{ sempv2_timeout }}"
       msg_vpn: "{{ vpn }}"
-    solace_acl_publish_topic_exception:
+      virtual_router: "{{ virtual_router }}"
+    solace_get_mqtt_sessions:
+      host: "{{ sempv2_host }}"
+      port: "{{ sempv2_port }}"
+      secure_connection: "{{ sempv2_is_secure_connection }}"
+      username: "{{ sempv2_username }}"
+      password: "{{ sempv2_password }}"
+      timeout: "{{ sempv2_timeout }}"
+    solace_get_mqtt_session_subscriptions:
       host: "{{ sempv2_host }}"
       port: "{{ sempv2_port }}"
       secure_connection: "{{ sempv2_is_secure_connection }}"
@@ -59,91 +76,60 @@
       password: "{{ sempv2_password }}"
       timeout: "{{ sempv2_timeout }}"
       msg_vpn: "{{ vpn }}"
-    solace_acl_client_connect_exception:
-      host: "{{ sempv2_host }}"
-      port: "{{ sempv2_port }}"
-      secure_connection: "{{ sempv2_is_secure_connection }}"
-      username: "{{ sempv2_username }}"
-      password: "{{ sempv2_password }}"
-      timeout: "{{ sempv2_timeout }}"
-      msg_vpn: "{{ vpn }}"
+      virtual_router: "{{ virtual_router }}"
+
+  vars:
+    mqtt_client_username: "ansible-solace_test_mqtt_client_username"
 
   tasks:
 
     - name: Get Solace Facts
       solace_get_facts:
 
-    - name: Delete ACL Profile
-      solace_acl_profile:
-        name: "test_ansible_solace"
-        state: absent
-
-    - name: Create ACL Profile
-      solace_acl_profile:
-        name: "test_ansible_solace"
-        settings:
-          clientConnectDefaultAction: "disallow"
-          publishTopicDefaultAction: "disallow"
-          subscribeTopicDefaultAction: "disallow"
+    - name: Create Client Username
+      solace_client_username:
+        name: "{{ mqtt_client_username }}"
         state: present
 
-    - name: Update ACL Profile
-      solace_acl_profile:
-        name: "test_ansible_solace"
-        settings:
-          clientConnectDefaultAction: "allow"
-        state: present
+    - include_vars:
+        file: "./lib/mqtt.vars.json"
+        name: target_list
 
-    - name: Add Subscribe Topic Exceptions to ACL Profile
-      solace_acl_subscribe_topic_exception:
-        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
-        acl_profile_name: "test_ansible_solace"
-        name: "test/ansible/solace"
-        state: present
+    - name: Adding Mqtt Sessions
+      include_tasks: ./lib/mqtt.tasks.yml
+      loop: "{{ target_list.mqttSessions }}"
+      loop_control:
+        loop_var: mqtt_session_item
 
-    - name: Add Publish Topic Exceptions to ACL Profile
-      solace_acl_publish_topic_exception:
-        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
-        acl_profile_name: "test_ansible_solace"
-        name: "test/ansible/solace"
-        state: present
+    - name: Get List of MQTT Sessions
+      solace_get_mqtt_sessions:
+        msg_vpn: "{{ vpn }}"
+        query_params:
+          where:
+            - "mqttSessionClientId==ansible-solace_test_mqtt*"
+          select:
+            - "mqttSessionClientId"
+            - "mqttSessionVirtualRouter"
+            - "enabled"
+            - "owner"
+      register: get_sessions_result
 
-    - name: Add Client Connect Exception to ACL Profile
-      solace_acl_client_connect_exception:
-        acl_profile_name: "test_ansible_solace"
-        name: "192.168.1.64/26"
-        state: present
+    - name: Fail when new sessions list count != 4
+      fail:
+        msg: "new mqtt sessions count != 4"
+      when: get_sessions_result.result_list_count != 4
 
-    # remove everything again
+    - name: Deleting Mqtt Sessions
+      solace_mqtt_session:
+        name: "{{ item.mqttSessionClientId }}"
+        state: absent
+      loop: "{{ target_list.mqttSessions }}"
 
-    # - debug:
-    #     msg: "Not removing objects - Ending play"
-    # - meta: end_play
-
-    - name: Remove Client Connect Exception from ACL Profile
-      solace_acl_client_connect_exception:
-        acl_profile_name: "test_ansible_solace"
-        name: "192.168.1.64/26"
+    - name: Remove Client Username
+      solace_client_username:
+        name: "{{ mqtt_client_username }}"
         state: absent
 
-    - name: Delete Subscribe Topic Exceptions from ACL Profile
-      solace_acl_subscribe_topic_exception:
-        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
-        acl_profile_name: "test_ansible_solace"
-        name: "test/ansible/solace"
-        state: absent
-
-    - name: Delete Publish Topic Exceptions from ACL Profile
-      solace_acl_publish_topic_exception:
-        semp_version: "{{ ansible_facts.solace.about.api.sempVersion }}"
-        acl_profile_name: "test_ansible_solace"
-        name: "test/ansible/solace"
-        state: absent
-
-    - name: Delete ACL Profile
-      solace_acl_profile:
-        name: "test_ansible_solace"
-        state: absent
 
 ###
 # The End.

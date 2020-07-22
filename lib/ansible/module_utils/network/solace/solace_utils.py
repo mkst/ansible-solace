@@ -51,10 +51,6 @@ MSG_VPNS = 'msgVpns'
 TOPIC_ENDPOINTS = 'topicEndpoints'
 ACL_PROFILES = 'aclProfiles'
 ACL_PROFILES_CLIENT_CONNECT_EXCEPTIONS = 'clientConnectExceptions'
-# ACL_PROFILES_PUBLISH_TOPIC_EXCEPTIONS = 'publishTopicExceptions'
-# ACL_PROFILES_SUBSCRIBE_TOPIC_EXCEPTIONS = 'subscribeTopicExceptions'
-# ACL_PROFILES_PUBLISH_EXCEPTIONS = 'publishExceptions'
-# ACL_PROFILES_SUBSCRIBE_EXCEPTIONS = 'subscribeExceptions'
 CLIENT_PROFILES = 'clientProfiles'
 CLIENT_USERNAMES = 'clientUsernames'
 DMR_BRIDGES = 'dmrBridges'
@@ -65,13 +61,11 @@ BRIDGES_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 
 QUEUES = 'queues'
 SUBSCRIPTIONS = 'subscriptions'
-
 """ RDP Resources """
 RDP_REST_DELIVERY_POINTS = 'restDeliveryPoints'
 RDP_REST_CONSUMERS = 'restConsumers'
 RDP_TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 RDP_QUEUE_BINDINGS = 'queueBindings'
-
 """ DMR Resources """
 DMR_CLUSTERS = 'dmrClusters'
 LINKS = 'links'
@@ -79,6 +73,9 @@ REMOTE_ADDRESSES = 'remoteAddresses'
 TLS_TRUSTED_COMMON_NAMES = 'tlsTrustedCommonNames'
 """ cert authority resources """
 CERT_AUTHORITIES = 'certAuthorities'
+""" MQTT Sesion level reources """
+MQTT_SESSIONS = 'mqttSessions'
+MQTT_SESSION_SUBSCRIPTIONS = 'subscriptions'
 
 ################################################################################################
 # initialize logging
@@ -269,6 +266,12 @@ def arg_spec_broker():
 def arg_spec_vpn():
     return dict(
         msg_vpn=dict(type='str', required=True)
+    )
+
+
+def arg_spec_virtual_router():
+    return dict(
+        virtual_router=dict(type='str', default='primary', choice=['primary', 'backup'])
     )
 
 

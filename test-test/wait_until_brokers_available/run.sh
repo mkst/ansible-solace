@@ -39,10 +39,15 @@ if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
 ##############################################################################################################################
 # Run
 
-BROKERS_INVENTORY="$SCRIPT_PATH/../lib/brokers.inventory.json"
+# SELECT
+  # select inventory
+  BROKERS_INVENTORY="$SCRIPT_PATH/../lib/local.broker.inventory.json"
+  # BROKERS_INVENTORY="$SCRIPT_PATH/../lib/cloud.broker.inventory.json"
+  # select broker(s) inside inventory
+  BROKERS="all"
+# END SELECT
+
 PLAYBOOK="$SCRIPT_PATH/wait_until_brokers_available.playbook.yml"
-BROKERS="all"
-#BROKERS="local"
 
 # --step --check -vvv
 ansible-playbook -i $BROKERS_INVENTORY \

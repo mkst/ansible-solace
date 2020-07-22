@@ -36,25 +36,24 @@ if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
 source $SCRIPT_PATH/../lib/set-ansible-env.dev.sh
 if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
 
-##############################################################################################################################
-# Run
-
-# runScript="./_run-call.sh"
-#
-# $runScript
-#
-# if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
-
 ANSIBLE_SOLACE_LOG_FILE="$SCRIPT_PATH/ansible-solace.log"
 rm -f $ANSIBLE_SOLACE_LOG_FILE
 
-BROKERS_INVENTORY="$SCRIPT_PATH/../lib/brokers.inventory.json"
-PLAYBOOK="$SCRIPT_PATH/solace_rdp.playbook.yml"
-BROKERS="all"
-BROKERS="local"
-BROKERS="solace-cloud"
+##############################################################################################################################
+# Run
 
-$SCRIPT_PATH/../wait_until_brokers_available/_run.call.sh
+# SELECT
+  # select inventory
+  BROKERS_INVENTORY="$SCRIPT_PATH/../lib/local.broker.inventory.json"
+  BROKERS_INVENTORY="$SCRIPT_PATH/../lib/cloud.broker.inventory.json"
+  # select broker(s) inside inventory
+  BROKERS="all"
+# END SELECT
+
+
+PLAYBOOK="$SCRIPT_PATH/solace_rdp.playbook.yml"
+
+$SCRIPT_PATH/../wait_until_brokers_available/_run.call.sh $BROKERS_INVENTORY
 if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
 
 # --step --check -vvv

@@ -1,0 +1,22 @@
+{
+  "all": {
+    "hosts": {
+      "local": {
+        "meta": {
+          "isSolaceCloud": false,
+          "account": "local",
+          "service": "localhost:8080"
+        },
+        "ansible_connection": "local",
+        "sempv2_host": "localhost",
+        "sempv2_port": 8080,
+        "sempv2_is_secure_connection": false,
+        "sempv2_username": "admin",
+        "sempv2_password": "admin",
+        "sempv2_timeout": "60",
+        "vpn": "default",
+        "virtual_router": "primary"
+      }
+    }
+  }
+}

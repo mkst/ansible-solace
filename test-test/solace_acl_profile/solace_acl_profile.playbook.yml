@@ -25,9 +25,8 @@
 
 -
   name: Create / Update ACL Profile with subscr & pub topic exceptions
-
   hosts: "{{ brokers }}"
-
+  gather_facts: no
   module_defaults:
     solace_get_facts:
       host: "{{ sempv2_host }}"

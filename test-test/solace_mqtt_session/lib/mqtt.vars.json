@@ -1,0 +1,42 @@
+{
+  "settings": {
+    "_gt_eq_2_14": {
+      "queueMaxMsgSize": 200000,
+      "queueMaxBindCount": 10
+    }
+  },
+  "mqttSessions": [
+    {
+      "mqttSessionClientId": "ansible-solace_test_mqtt__1__",
+      "subscriptions": [
+        "ansible-solace/test/__1__/topic/subscription/1/>",
+        "ansible-solace/test/__1__/topic/subscription/2/>",
+        "ansible-solace/test/__1__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "mqttSessionClientId": "ansible-solace_test_mqtt__2__",
+      "subscriptions": [
+        "ansible-solace/test/__2__/topic/subscription/1/>",
+        "ansible-solace/test/__2__/topic/subscription/2/>",
+        "ansible-solace/test/__2__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "mqttSessionClientId": "ansible-solace_test_mqtt__3__",
+      "subscriptions": [
+        "ansible-solace/test/__3__/topic/subscription/1/>",
+        "ansible-solace/test/__3__/topic/subscription/2/>",
+        "ansible-solace/test/__3__/topic/subscription/3/>"
+        ]
+    },
+    {
+      "mqttSessionClientId": "ansible-solace_test_mqtt__4__",
+      "subscriptions": [
+        "ansible-solace/test/__4__/topic/subscription/1/>",
+        "ansible-solace/test/__4__/topic/subscription/2/>",
+        "ansible-solace/test/__4__/topic/subscription/3/>"
+        ]
+    }
+  ]
+}

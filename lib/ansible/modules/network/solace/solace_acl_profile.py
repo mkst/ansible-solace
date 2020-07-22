@@ -40,8 +40,7 @@ module: solace_acl_profile
 short_description: Configure an ACL Profile on a message vpn.
 
 description:
-- "Configure an ACL Profile on a message vpn."
-- "Allows addition, removal and configuration of ACL Profile(s) on Solace Brokers in an idempotent manner."
+- "Configure an ACL Profile on a message vpn. Allows addition, removal and configuration of ACL Profile(s) on Solace Brokers in an idempotent manner."
 - "Reference: U(https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/aclProfile)."
 
 options:

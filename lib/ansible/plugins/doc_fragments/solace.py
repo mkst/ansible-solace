@@ -77,6 +77,18 @@ options:
     type: str
 '''
 
+    VIRTUAL_ROUTER = r'''
+options:
+  virtual_router:
+    description: The virtual router.
+    required: false
+    type: str
+    default: primary
+    choices:
+      - primary
+      - backup
+'''
+
     SETTINGS = r'''
 options:
   settings:
@@ -107,7 +119,6 @@ options:
     QUERY = r'''
 options:
   query_params:
-    version_added: "0.3.0"
     description: The query parameters.
     required: false
     type: dict

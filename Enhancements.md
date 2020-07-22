@@ -31,7 +31,6 @@
 
 ### Create
 
-- [solace_mqtt_session](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/mqttSession)
 - [solace_queue_template](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/queueTemplate)
 - [solace_authentication_oauth_provider](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/authenticationOauthProvider)
 - [solace_authorization_group](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/authorizationGroup/getMsgVpnAuthorizationGroups)
@@ -43,7 +42,7 @@
 
 ### Create get_&lt;module> modules
 
-Create for each module a get_list() module.
+Create remaining *_get_* module for each module.
 
 Examples: `solace_get_queues`, `solace_get_client_usernames`
 

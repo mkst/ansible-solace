@@ -172,6 +172,11 @@ Status of the `solace_*` modules:
 | [solace_dmr_cluster_link_remote_address](lib/ansible/modules/network/solace/solace_dmr_cluster_link_remote_address.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.playbook.yml) |
 | [solace_dmr_cluster_link_trusted_cn](lib/ansible/modules/network/solace/solace_dmr_cluster_link_trusted_cn.py) | dmrCluster | Action | :sunny: | [:page_facing_up:](examples/solace_dmr.playbook.yml) |
 |   |   |   |   |   |
+| [solace_get_mqtt_sessions](lib/ansible/modules/network/solace/solace_get_mqtt_sessions.py) | mqttSession | Query | :sunny: | [:page_facing_up:](test-test/solace_mqtt_session/solace_mqtt_session.playbook.yml) |
+| [solace_get_mqtt_session_subscriptions](lib/ansible/modules/network/solace/solace_get_mqtt_session_subscriptions.py) | mqttSession | Query | :sunny: | [:page_facing_up:](test-test/solace_mqtt_session/solace_mqtt_session.playbook.yml) |
+| [solace_mqtt_session](lib/ansible/modules/network/solace/solace_mqtt_session.py) | mqttSession | Action | :sunny: | [:page_facing_up:](test-test/solace_mqtt_session/solace_mqtt_session.playbook.yml) |
+| [solace_mqtt_session_subscription](lib/ansible/modules/network/solace/solace_mqtt_session_subscription.py) | mqttSession | Action | :sunny: | [:page_facing_up:](test-test/solace_mqtt_session/solace_mqtt_session.playbook.yml) |
+|   |   |   |   |   |
 | [solace_get_queues](lib/ansible/modules/network/solace/solace_get_queues.py) | queue | Query | :sunny: | [:page_facing_up:](test-test/solace_get_queues/solace_get_queues.playbook.yml) |
 | [solace_queue](lib/ansible/modules/network/solace/solace_queue.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queue.yml) [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
 | [solace_queue_subscription](lib/ansible/modules/network/solace/solace_queue_subscription.py) | queue | Action | :sunny: | [:page_facing_up:](examples/solace_queues_and_subscriptions.playbook.yml) |
@@ -184,6 +189,10 @@ Status of the `solace_*` modules:
 | [solace_topic_endpoint](lib/ansible/modules/network/solace/solace_topic_endpoint.py) | topicEndpoint | Action | :sunny: | |
 |   |   |   |   |   |
 | [solace_vpn](lib/ansible/modules/network/solace/solace_vpn.py) | msgVpn | Action | :sunny: | [:page_facing_up:](examples/solace_vpn.yml) |
+
+# Tips & Tricks
+
+[See Tips & Tricks](./TipsTricks.md).
 
 # Writing New Modules
 

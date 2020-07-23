@@ -23,13 +23,18 @@
 # SOFTWARE.
 # ---------------------------------------------------------------------------------------------
 
+#SCRIPT_NAME=$(basename $(test -L "$0" && readlink "$0" || echo "$0"));
+SCRIPT_PATH=$(cd $(dirname "$0") && pwd);
+# test jq is installed
+res=$(jq --version)
+if [[ $? != 0 ]]; then echo "ERR >>> jq not found. aborting."; echo; exit 1; fi
+source $SCRIPT_PATH/lib/functions.sh
+
+
 clear
 echo; echo "##############################################################################################################"
 echo "# Running tests ..."
 
-SCRIPT=`realpath -s $0`
-SCRIPT_PATH=`dirname $SCRIPT`
-source $SCRIPT_PATH/lib/functions.sh
 
 ##############################################################################################################################
 # Prepare
@@ -166,8 +171,9 @@ for i in "${!brokerDockerImagesArray[@]}"; do
 
 done
 
-echo; echo "##############################################################################################################"
-echo; echo "# All tests completed successfully!"
+echo;
+echo "##############################################################################################################"
+echo "# All tests completed successfully!"
 echo;
 ##############################################################################################################################
 # loop 3:

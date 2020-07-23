@@ -25,8 +25,11 @@
 
 clear
 
-SCRIPT=`realpath -s $0`
-SCRIPT_PATH=`dirname $SCRIPT`
+SCRIPT_PATH=$(cd $(dirname "$0") && pwd);
+# test jq is installed
+res=$(jq --version)
+if [[ $? != 0 ]]; then echo "ERR >>> jq not found. aborting."; echo; exit 1; fi
+
 
 ##############################################################################################################################
 # Prepare

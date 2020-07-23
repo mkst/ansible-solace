@@ -25,9 +25,7 @@
 
 clear
 
-SCRIPT=`realpath -s $0`
-SCRIPT_PATH=`dirname $SCRIPT`
-source $SCRIPT_PATH/lib/functions.sh
+SCRIPT_PATH=$(cd $(dirname "$0") && pwd);
 
 brokerDockerImageLatest="solace/solace-pubsub-standard:latest"
 dockerComposeYmlFile="$SCRIPT_PATH/lib/PubSubStandard_singleNode.yml"

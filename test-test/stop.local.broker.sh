@@ -25,8 +25,7 @@
 
 clear
 
-SCRIPT=`realpath -s $0`
-SCRIPT_PATH=`dirname $SCRIPT`
+SCRIPT_PATH=$(cd $(dirname "$0") && pwd);
 source $SCRIPT_PATH/lib/functions.sh
 
 export brokerDockerContainerName="pubSubStandardSingleNode"

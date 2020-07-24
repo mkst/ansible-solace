@@ -40,6 +40,39 @@ function wait4BrokerStart() {
   done;
 }
 
+# if arg exists, return it
+# otherwise, ask the user
+function chooseTestRunnerEnv() {
+  testRunnerEnv=$1
+  envs=(
+    "dev"
+    "package"
+  )
+  #if [ ! -z ${testRunnerEnv+x} ]; then
+  # catches empty as well
+  if [ ! -z "$testRunnerEnv" ]; then
+    let found=-1
+    for i in "${!envs[@]}"; do
+      if [ ${envs[$i]} == $testRunnerEnv ]; then let found=$i; echo $testRunnerEnv; return 0; fi
+    done
+    echo "testRunnerEnv=$testRunnerEnv is not valid. Choose one of '${envs[@]}'." 1>&2; return 1
+  fi
+
+  echo "Choose the test runner environment:" 1>&2
+  echo 1>&2
+  for i in "${!envs[@]}"; do
+    echo "($i): ${envs[$i]}" 1>&2
+  done
+  echo 1>&2
+  read -p "Enter 0-$i: " choice
+  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ ! "$choice" -ge 0 ] || [ ! "$choice" -le "$i" ]; then
+    echo "Choose 0-$i, your choice:'$choice' is not valid" 1>&2
+    return 1
+  fi
+  echo ${envs[$choice]}
+  return 0
+}
+
 function chooseBrokerDockerImage() {
   if [[ $# != 1 ]]; then
       echo "Usage: brokerDockerImage='\$(chooseBrokerDockerImage "full_path/brokerDockerImages.json")'" 1>&2

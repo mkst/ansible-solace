@@ -33,20 +33,31 @@ source $SCRIPT_PATH/lib/functions.sh
 
 clear
 echo; echo "##############################################################################################################"
-echo "# Running tests ..."
+echo
 
 
 ##############################################################################################################################
 # Prepare
+
+#export ANSIBLE_SOLACE_TEST_RUNNER_ENV="dev"
+#export ANSIBLE_SOLACE_TEST_RUNNER_ENV="package"
+
+env=$(chooseTestRunnerEnv $ANSIBLE_SOLACE_TEST_RUNNER_ENV)
+if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
+echo; echo "Running tests with environment: $env ..."; echo
+export ANSIBLE_SOLACE_TEST_RUNNER_ENV=$env
 
 source $SCRIPT_PATH/lib/unset-all.sh
 if [[ $? != 0 ]]; then echo "ERR >>> aborting."; echo; exit 1; fi
 
 export ANSIBLE_SOLACE_ENABLE_LOGGING=false
 export ANSIBLE_PYTHON_INTERPRETER=/usr/local/bin/python
-ANSIBLE_SOLACE_HOME="$SCRIPT_PATH/.."
-export ANSIBLE_MODULE_UTILS="$ANSIBLE_SOLACE_HOME/lib/ansible/module_utils"
-export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/lib/ansible/modules"
+
+if [[ $ANSIBLE_SOLACE_TEST_RUNNER_ENV == "dev" ]]; then
+  export ANSIBLE_SOLACE_HOME="$SCRIPT_PATH/.."
+  export ANSIBLE_MODULE_UTILS="$ANSIBLE_SOLACE_HOME/lib/ansible/module_utils"
+  export ANSIBLE_LIBRARY="$ANSIBLE_SOLACE_HOME/lib/ansible/modules"
+fi
 
 ##############################################################################################################################
 # set test scripts

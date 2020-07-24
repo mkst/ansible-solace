@@ -32,7 +32,6 @@ res=$(jq --version)
 if [[ $? != 0 ]]; then echo "ERR >>> jq not found. aborting."; echo; exit 1; fi
 
 
-
 ##############################################################################################################################
 # Prepare
 
@@ -48,6 +47,6 @@ BROKERS="all"
 ansible-playbook -i $BROKERS_INVENTORY \
                   $PLAYBOOK \
                   --extra-vars "brokers=$BROKERS" \
-
+                  #-vvv
 ###
 # The End.

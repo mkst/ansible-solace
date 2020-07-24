@@ -1,8 +1,9 @@
 # Ansible Modules for Solace PubSub+ Event Brokers SEMP(v2) REST API
 
-Ansible modules to configure Solace PubSub+ event brokers with [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm).
+Ansible modules to configure [Solace PubSub+ Event Brokers](https://solace.com/products/event-broker/) with [SEMP v2](https://docs.solace.com/SEMP/Using-SEMP.htm).
 
-[Release Notes](./ReleaseNotes.md)
+
+[Release Notes](./ReleaseNotes.md).
 
 # QUICKSTART
 

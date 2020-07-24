@@ -25,12 +25,12 @@
 
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("pypi/README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="ansible-solace",
-    version="0.4.0",
+    version="0.4.1",
     author="Solace Corporation",
     author_email="ricardo.gomez-ulmke@solace.com",
     description="Ansible modules to configure Solace PubSub+ event brokers with SEMP(v2).",

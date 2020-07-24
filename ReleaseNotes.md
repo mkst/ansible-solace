@@ -1,5 +1,20 @@
 # Release Notes
 
+## Version: 0.4.1
+### New Modules
+    - none
+### Removed Modules
+    - none
+### Framework Changes
+    - none
+### Test Framework Changes
+    - added choice to run tests against dev or installed package
+### Test Updates
+    -none
+### Other Updates
+    - minor changes to Readmes
+
+
 ## Version: 0.4.0
 ### New Modules
     - solace_mqtt_session

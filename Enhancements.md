@@ -1,32 +1,5 @@
 # Potential Enhancements
 
-## Framework Enhancements
-
-- Create a Test Framework & CI/CD Pipeline
-
-### Define a Group
-
-- group/solace to set the defaults for the entire group and not every single module in a playbook?
-
-- see: https://docs.ansible.com/ansible/latest/user_guide/playbooks_module_defaults.html
-
-```yaml
-- hosts: all
-  module_defaults:
-    # example of aws group
-    group/aws:
-      region: us-west-2
-    # new
-    group/solace:
-      password: "{{ password }}"
-      host: "{{ host }}"
-      port: "{{ port }}"
-      username: "{{ username }}"
-      secure_connection: "{{ secure_connection }}"
-      timeout: 25
-      x_broker: "{{ x_broker | default() }}"
-```
-
 ## Modules
 
 ### Create
@@ -50,6 +23,14 @@ Examples: `solace_get_queues`, `solace_get_client_usernames`
 
   * [solace_rdp_rest_consumer_trusted_cn](https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/restDeliveryPoint/getMsgVpnRestDeliveryPointRestConsumerTlsTrustedCommonNames)
     - deprecated since 2.17 - replaced by "Common Name validation has been replaced by Server Certificate Name validation".
+
+## Framework
+
+- Add Solace Cloud API
+
+## Refactor as Ansible Collection
+
+[See here](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html).
 
 ---
 The End.
